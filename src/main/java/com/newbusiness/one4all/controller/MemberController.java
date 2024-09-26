@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.controller;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.service.MemberService;
 import com.newbusiness.one4all.util.ApiResponse;
 import com.newbusiness.one4all.util.GlobalConstants;
+import com.newbusiness.one4all.util.JwtUtil;
 import com.newbusiness.one4all.util.ResponseUtils;
 
 import jakarta.validation.Valid;
@@ -35,7 +37,8 @@ public class MemberController {
 	private static final Logger logger = LoggerFactory.getLogger(MemberController.class);
 	@Autowired
 	private MemberService userService;
-
+	@Autowired
+    private JwtUtil jwtUtil;
 	@PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> registerUser(@Valid @RequestBody Member user, BindingResult result) {
 		logger.info("request received with the user" + user);
@@ -70,17 +73,22 @@ public class MemberController {
 	}
 
 	@PostMapping("/login")
-	public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-		Optional<Member> validUser = userService.validateLogin(loginRequest);
-		if (!validUser.isPresent()) {
-			return ResponseEntity.badRequest().body(GlobalConstants.USER_LOGIN_FAILED);
-		}
-		/*
-		 * //return ResponseEntity.ok().body("Login successful."); ApiResponse
-		 * apiResponse = ResponseUtils.buildApiResponse(Collections.singletonList(
-		 * Map.of( "statusMessage", GlobalConstants.USER_LOGIN_SUCCESS, "status",
-		 * HttpStatus.OK, "member", Collections.singletonList(validUser) ) ));
-		 */
-		return ResponseEntity.ok(HttpStatus.OK);
-	}
+    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
+        Optional<Member> validUser = userService.validateLogin(loginRequest);
+        if (!validUser.isPresent()) {
+            return ResponseEntity.badRequest().body(GlobalConstants.USER_LOGIN_FAILED);
+        }
+
+        String jwtToken = jwtUtil.generateToken(validUser.get().getOfaMemberId());
+        Map<String, String> tokenResponse = new HashMap<>();
+        tokenResponse.put("token", jwtToken);
+
+        ApiResponse apiResponse = ResponseUtils.buildApiResponse(Collections.singletonList(
+            Map.of("statusMessage", GlobalConstants.USER_LOGIN_SUCCESS, 
+                   "status", HttpStatus.OK, 
+                   "member", Collections.singletonList(validUser),
+                   "token", jwtToken)
+        ));
+        return ResponseEntity.ok(apiResponse);  
+    }
 }

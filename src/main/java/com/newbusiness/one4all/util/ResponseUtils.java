@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import com.newbusiness.one4all.dto.PaymentDetailDTO;
+import com.newbusiness.one4all.model.PaymentDetails;
+
 public class ResponseUtils {
 
     public static String generateCorrelationID() {
@@ -49,6 +52,18 @@ public class ResponseUtils {
             "code", 400
         );
         return new ApiResponse(correlationId, transactionDate, Collections.singletonList(errorResponse));
+    }
+    public static PaymentDetailDTO convertToDTO(PaymentDetails paymentDetails) {
+        PaymentDetailDTO dto = new PaymentDetailDTO();
+        dto.setOfaConsumerName(paymentDetails.getOfaConsumerName());
+        dto.setOfaConsumerNo(paymentDetails.getOfaConsumerNo());
+        dto.setOfaHelpAmount(paymentDetails.getOfaHelpAmount());
+        dto.setOfaPaymentStatus(paymentDetails.getOfaPaymentStatus().name()); // Enum to String
+        dto.setOfaStageNo(paymentDetails.getOfaStageNo());
+        dto.setOfaRefferalAmount(paymentDetails.getOfaRefferalAmount());
+        dto.setOfaMobile(paymentDetails.getOfaMobile());
+        dto.setOfaParentConsumerNo(paymentDetails.getOfaParentConsumerNo());
+        return dto;
     }
 }
 

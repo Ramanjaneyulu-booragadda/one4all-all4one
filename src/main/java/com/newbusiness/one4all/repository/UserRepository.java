@@ -7,6 +7,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.newbusiness.one4all.model.Member;
 
 public interface UserRepository extends JpaRepository<Member, Long> {
-	Optional<Member> findByOfaMemberIdAndOfaPassword(String ofaMemberId, String ofaPassword);
+	Optional<Member> findByOfaMemberId(String ofaMemberId);
 
 }

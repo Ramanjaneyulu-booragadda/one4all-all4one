@@ -1,11 +1,30 @@
 package com.newbusiness.one4all.model;
 
 import java.time.LocalDate;
-import jakarta.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
@@ -17,6 +36,7 @@ import lombok.*;
  * @Setter
  */
 @Table(name = "ofa_user_reg_details",schema = "datalayer")
+@JsonIgnoreProperties({"referredBy", "downliners"})
 public class Member {
 
     @Id
@@ -89,6 +109,44 @@ public class Member {
     @Column(name = "ofa_is_deleted", nullable = false)
     @NotNull(message = "{member.deleted.notnull}")
     private Integer ofaIsDeleted;
+ // Referring member (Upliner)
+    @ManyToOne
+    @JoinColumn(name = "referrer_id")
+    @JsonBackReference 
+    private Member referredBy;
+
+    // List of downline members (people referred by this member)
+    @OneToMany(mappedBy = "referredBy", cascade = CascadeType.ALL)
+    @JsonManagedReference
+    private List<Member> downliners = new ArrayList();
+
+    @OneToMany(mappedBy = "uplinerMember", cascade = CascadeType.ALL)
+    private List<UplinerDetails> upliners;
+    
+    private int referralLevel;
+    public int getReferralLevel() {
+        return referralLevel;
+    }
+
+    public void setReferralLevel(int referralLevel) {
+        this.referralLevel = referralLevel;
+    }
+
+	public Member getReferredBy() {
+		return referredBy;
+	}
+
+	public void setReferredBy(Member referredBy) {
+		this.referredBy = referredBy;
+	}
+
+	public List<Member> getDownliners() {
+		return downliners;
+	}
+
+	public void setDownliners(List<Member> downliners) {
+		this.downliners = downliners;
+	}
 
 	public Long getOfaId() {
 		return ofaId;
@@ -217,5 +275,15 @@ public class Member {
 	public void setOfaIsDeleted(Integer ofaIsDeleted) {
 		this.ofaIsDeleted = ofaIsDeleted;
 	}
+
+	public List<UplinerDetails> getUpliners() {
+		return upliners;
+	}
+
+	public void setUpliners(List<UplinerDetails> upliners) {
+		this.upliners = upliners;
+	}
+
+	
     
 }

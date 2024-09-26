@@ -10,6 +10,9 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.Date;
+
+import com.newbusiness.one4all.util.PaymentStatus;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -56,16 +59,16 @@ public class PaymentDetails {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "ofa_payment_status", nullable = false)
-    private OfaPaymentStatus ofaPaymentStatus;
+    private PaymentStatus ofaPaymentStatus;
 
     @Column(name = "ofa_countdown")
     private Integer ofaCountdown;
 
     @Column(name = "ofa_created_at", nullable = false)
-    private LocalDateTime ofaCreatedAt;
+    private Date ofaCreatedAt;
 
     @Column(name = "ofa_updated_at", nullable = false)
-    private LocalDateTime ofaUpdatedAt;
+    private Date ofaUpdatedAt;
 
 	public Long getOfaPaymentId() {
 		return ofaPaymentId;
@@ -139,11 +142,13 @@ public class PaymentDetails {
 		this.ofaStageNo = ofaStageNo;
 	}
 
-	public OfaPaymentStatus getOfaPaymentStatus() {
+	
+
+	public PaymentStatus getOfaPaymentStatus() {
 		return ofaPaymentStatus;
 	}
 
-	public void setOfaPaymentStatus(OfaPaymentStatus ofaPaymentStatus) {
+	public void setOfaPaymentStatus(PaymentStatus ofaPaymentStatus) {
 		this.ofaPaymentStatus = ofaPaymentStatus;
 	}
 
@@ -155,26 +160,28 @@ public class PaymentDetails {
 		this.ofaCountdown = ofaCountdown;
 	}
 
-	public LocalDateTime getOfaCreatedAt() {
+	public Date getOfaCreatedAt() {
 		return ofaCreatedAt;
 	}
 
-	public void setOfaCreatedAt(LocalDateTime ofaCreatedAt) {
+	public void setOfaCreatedAt(Date ofaCreatedAt) {
 		this.ofaCreatedAt = ofaCreatedAt;
 	}
 
-	public LocalDateTime getOfaUpdatedAt() {
+	public Date getOfaUpdatedAt() {
 		return ofaUpdatedAt;
 	}
 
-	public void setOfaUpdatedAt(LocalDateTime ofaUpdatedAt) {
+	public void setOfaUpdatedAt(Date ofaUpdatedAt) {
 		this.ofaUpdatedAt = ofaUpdatedAt;
 	}
+
+
 
     // Getters and setters omitted for brevity
     
 }
 
-enum OfaPaymentStatus {
-    PAID, UNPAID, PENDING, CANCELLED
-}
+/*
+ * enum OfaPaymentStatus { PAID, UNPAID, PENDING, CANCELLED }
+ */
