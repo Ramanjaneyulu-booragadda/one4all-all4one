@@ -1,8 +1,10 @@
 package com.newbusiness.one4all.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.PaymentDetails;
 import com.newbusiness.one4all.repository.PaymentDetailRepository;
+import com.newbusiness.one4all.repository.UserRepository;
 import com.newbusiness.one4all.util.PaymentStatus;
 import com.newbusiness.one4all.util.ResponseUtils;
 import org.springframework.core.env.Environment;
@@ -27,6 +30,9 @@ public class MLMService {
 
     @Autowired
     private Environment environment;
+    
+    @Autowired
+    private UserRepository userRepository;
 
     // This method handles the distribution of payouts up the chain
     @Transactional
@@ -164,10 +170,84 @@ public class MLMService {
         }
     }
 
-    // Fetch root admin details (you should implement this based on your system logic)
-    private Member getRootAdmin() {
-        // Fetch root admin details here
-        // Example: return memberRepository.findRootAdmin();
-        return null;
+ 
+ // Method to get all upliner details along with the amount to be paid
+    public List<Map<String, Object>> getUplinerDetailsWithPayout(String memberId) {
+        Optional<Member> currentMemberOpt = userRepository.findByOfaMemberId(memberId);
+        if (!currentMemberOpt.isPresent()) {
+            throw new IllegalArgumentException("Member with ID " + memberId + " not found.");
+        }
+
+        Member currentMember = currentMemberOpt.get();
+        Member currentUpliner = currentMember.getReferredBy();
+        int stage = 1;
+
+        // Dynamic payout scheme from properties
+        Map<Integer, BigDecimal> payoutScheme = getPayoutSchemeFromProperties();
+
+        List<Map<String, Object>> uplinerDetailsList = new ArrayList<>();
+
+        // Traverse upliner chain up to 10 levels
+        while (currentUpliner != null && stage <= 10) {
+            BigDecimal payout = calculateUplinePayout(payoutScheme, stage);
+
+            // Add upliner details to the list
+            Map<String, Object> uplinerDetails = new HashMap<>();
+            uplinerDetails.put("stage", stage);
+            uplinerDetails.put("uplinerMemberId", currentUpliner.getOfaMemberId());
+            uplinerDetails.put("uplinerName", currentUpliner.getOfaFullName());
+            uplinerDetails.put("payoutAmount", payout);
+
+            uplinerDetailsList.add(uplinerDetails);
+
+            // Move to the next upliner
+            currentUpliner = currentUpliner.getReferredBy();
+            stage++;
+        }
+
+        // In case the upliner chain is shorter than 10 levels, fallback to root admin
+        if (stage <= 10 && currentUpliner == null) {
+            distributeToRootAdminForUplinerList(uplinerDetailsList, stage, payoutScheme);
+        }
+
+        return uplinerDetailsList;
     }
+    private void distributeToRootAdminForUplinerList(List<Map<String, Object>> uplinerDetailsList, int startStage, Map<Integer, BigDecimal> payoutScheme) {
+        // Fetch root admin details (implement getRootAdmin logic based on your system)
+        Member rootAdmin = getRootAdmin();
+
+        if (rootAdmin == null) {
+            throw new IllegalStateException("Root admin not found in the system.");
+        }
+
+        // Continue distributing the remaining stages (up to 10) to the root admin
+        while (startStage <= 10) {
+            BigDecimal payout = calculateUplinePayout(payoutScheme, startStage);
+
+            // Add root admin details to the list for this stage
+            Map<String, Object> rootAdminDetails = new HashMap<>();
+            rootAdminDetails.put("stage", startStage);
+            rootAdminDetails.put("uplinerMemberId", rootAdmin.getOfaMemberId());
+            rootAdminDetails.put("uplinerName", rootAdmin.getOfaFullName());
+            rootAdminDetails.put("payoutAmount", payout);
+
+            // Add to upliner details list
+            uplinerDetailsList.add(rootAdminDetails);
+
+            // Move to the next stage
+            startStage++;
+        }
+    }
+    private Member getRootAdmin() {
+        // Example: Fetch the root admin based on a predefined ID or role
+        String rootAdminId = environment.getProperty("mlm.root.admin.id", "1");  // Root admin ID from properties
+        Optional<Member> rootAdminOpt = userRepository.findByOfaMemberId(rootAdminId);
+
+        if (rootAdminOpt.isPresent()) {
+            return rootAdminOpt.get();
+        } else {
+            throw new IllegalStateException("Root admin not found with ID: " + rootAdminId);
+        }
+    }
+
 }

@@ -91,4 +91,49 @@ public class MemberController {
         ));
         return ResponseEntity.ok(apiResponse);  
     }
+	
+	@PostMapping(value = "/bulk-register", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<?> bulkRegisterUsers(@Valid @RequestBody List<Member> users, BindingResult result) {
+	    logger.info("Bulk registration request received with {} users", users.size());
+
+	    if (result.hasErrors()) {
+	        List<Map<String, Object>> errorMessages = result.getAllErrors().stream()
+	            .map(error -> {
+	                Map<String, Object> errorMap = new HashMap<>();
+	                errorMap.put("field", ((FieldError) error).getField());
+	                errorMap.put("message", error.getDefaultMessage());
+	                errorMap.put("rejectedValue", ((FieldError) error).getRejectedValue());
+	                return errorMap;
+	            })
+	            .collect(Collectors.toList());
+	        ApiResponse apiResponse = ResponseUtils.buildValidationErrorResponse(errorMessages);
+	        return ResponseEntity.badRequest().body(apiResponse);
+	    }
+
+	    try {
+	        List<Member> registeredUsers = userService.bulkRegisterMembers(users);
+
+	        List<Map<String, Object>> registrationDetails = registeredUsers.stream().map(registeredUser -> {
+	            Map<String, Object> userDetails = new HashMap<>();
+	            userDetails.put("MemberID", registeredUser.getOfaMemberId());
+	            userDetails.put("emailid", registeredUser.getOfaEmail());
+	            userDetails.put("Mobile", registeredUser.getOfaMobileNo());
+	            return userDetails;
+	        }).collect(Collectors.toList());
+
+	        Map<String, Object> message = new HashMap<>();
+	        message.put("status", "Success");
+	        message.put("code", 200);
+	        message.put("message", "Records created successfully.");
+	        message.put("RegistrationDetails", registrationDetails);
+
+	        List<Map<String, Object>> messages = List.of(message);
+	        ApiResponse apiResponse = ResponseUtils.buildApiResponse(messages);
+	        return ResponseEntity.ok(apiResponse);
+	    } catch (Exception e) {
+	        logger.error("Error while registering users in bulk", e);
+	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error while registering users in bulk");
+	    }
+	}
+
 }

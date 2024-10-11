@@ -51,7 +51,7 @@ public class SecurityConfigurer {
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http.csrf().disable() // Disable CSRF for stateless APIs
 				.cors().and() // Enable CORS
-				.authorizeRequests().requestMatchers("/api/register", "/api/login").permitAll() // Publicly accessible
+				.authorizeRequests().requestMatchers("/api/register", "/api/login","/api/bulk-register").permitAll() // Publicly accessible
 																								// endpoints
 				.anyRequest().authenticated() // All other endpoints require authentication
 				.and().sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()

@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.List;
 
 import com.newbusiness.one4all.dto.LoginRequest;
@@ -100,5 +101,14 @@ public class MemberService implements UserDetailsService {
             return true;
         }
         return false;
+    }
+    
+ // Bulk register members
+    public List<Member> bulkRegisterMembers(List<Member> members) {
+        return members.stream().map(member -> {
+            member.setOfaMemberId(ResponseUtils.generateCustomId(idPrefix, numberLength));
+            member.setOfaPassword(passwordEncoder.encode(member.getOfaPassword()));
+            return userRepository.save(member);
+        }).collect(Collectors.toList());
     }
 }
