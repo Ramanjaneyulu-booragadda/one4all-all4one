@@ -18,6 +18,7 @@ import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.PaymentDetails;
 import com.newbusiness.one4all.repository.PaymentDetailRepository;
 import com.newbusiness.one4all.repository.UserRepository;
+import com.newbusiness.one4all.util.PaymentStatus;
 
 @Service
 @Transactional(rollbackFor = Exception.class)
@@ -31,7 +32,21 @@ public class PaymentDetailService {
 		// Here you can implement other registration logic, like encrypting the password
 		paymentDetails.setOfaCreatedAt(new Date());
 		paymentDetails.setOfaUpdatedAt(new Date());
+		paymentDetails.setOfaPaymentStatus(PaymentStatus.PAID);
+		paymentDetails.setOfaTotalAmount(paymentDetails.getOfaHelpAmount().add(paymentDetails.getOfaRefferalAmount()));
 		return paymentDetailRepository.save(paymentDetails);
+	}
+
+	public PaymentDetails updatePayment(PaymentDetails paymentDetails) {
+		List<PaymentDetails> existingPaymentList = paymentDetailRepository
+				.findAllByOfaConsumerNo(paymentDetails.getOfaConsumerNo());
+		PaymentDetails existingPaymentObj = null;
+		if (!existingPaymentList.isEmpty()) {
+			existingPaymentObj = existingPaymentList.get(0);
+			existingPaymentObj.setOfaHelpAmount(paymentDetails.getOfaHelpAmount());
+			paymentDetailRepository.save(existingPaymentObj);
+		}
+		return existingPaymentObj;
 	}
 
 	// READ
@@ -82,12 +97,13 @@ public class PaymentDetailService {
 			Member referredMember = referredMemberOpt.get();
 			Member referrer = referrerOpt.get();
 
-			if (referrer.getDownliners().size() >= 2) {
-				throw new IllegalStateException("Referrer already has 2 direct members.");
-			}
-
-			referredMember.setReferredBy(referrer);
-			referrer.setReferralLevel(determineReferralLevel(paymentDetails));
+			/*
+			 * if (referrer.getDownliners().size() >= 2) { throw new
+			 * IllegalStateException("Referrer already has 2 direct members."); }
+			 * 
+			 * referredMember.setReferredBy(referrer);
+			 * referrer.setReferralLevel(determineReferralLevel(paymentDetails));
+			 */
 
 			userRepository.save(referredMember); // Update referred member
 			userRepository.save(referrer); // Update referrer
@@ -105,25 +121,22 @@ public class PaymentDetailService {
 			int level = 0; // Start at level 1
 			Set<Long> visitedMembers = new HashSet<>(); // To track visited members
 
-			Member referrer = referredMember.getReferredBy();
-
-			// Traverse the referredBy chain to calculate the level
-			while (referrer != null) {
-				// Check for cyclic reference (infinite loop prevention)
-				if (visitedMembers.contains(referrer.getOfaId())) {
-					// Break the loop if we detect a cycle
-					System.out.println("Cyclic reference detected in referral chain!");
-					break;
-				}
-
-				// Add the current referrer to the visited set
-				visitedMembers.add(referrer.getOfaId());
-
-				level++;
-				referrer.setReferralLevel(level); // Determine and set level
-				userRepository.save(referrer); // Save the updated level of referrer after adding a member
-				referrer = referrer.getReferredBy(); // Move up the chain
-			}
+			/*
+			 * Member referrer = referredMember.getReferredBy();
+			 * 
+			 * // Traverse the referredBy chain to calculate the level while (referrer !=
+			 * null) { // Check for cyclic reference (infinite loop prevention) if
+			 * (visitedMembers.contains(referrer.getOfaId())) { // Break the loop if we
+			 * detect a cycle
+			 * System.out.println("Cyclic reference detected in referral chain!"); break; }
+			 * 
+			 * // Add the current referrer to the visited set
+			 * visitedMembers.add(referrer.getOfaId());
+			 * 
+			 * level++; referrer.setReferralLevel(level); // Determine and set level
+			 * userRepository.save(referrer); // Save the updated level of referrer after
+			 * adding a member referrer = referrer.getReferredBy(); // Move up the chain }
+			 */
 
 			return level;
 		} else {
@@ -131,8 +144,9 @@ public class PaymentDetailService {
 			return 1;
 		}
 	}
-	  // Method to check for existing payment details by ofaConsumerNo
-    public Optional<PaymentDetails> findByOfaConsumerNo(String ofaConsumerNo) {
-        return paymentDetailRepository.findByOfaConsumerNo(ofaConsumerNo);
-    }
+
+	// Method to check for existing payment details by ofaConsumerNo
+	public Optional<PaymentDetails> findByOfaConsumerNo(String ofaConsumerNo) {
+		return paymentDetailRepository.findByOfaConsumerNo(ofaConsumerNo);
+	}
 }

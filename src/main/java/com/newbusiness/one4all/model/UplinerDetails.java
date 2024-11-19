@@ -2,6 +2,8 @@ package com.newbusiness.one4all.model;
 
 import java.io.Serializable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -11,60 +13,30 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
+import jakarta.persistence.Transient;
+import lombok.Getter;
+import lombok.Setter;
+@Setter
+@Getter
 @Entity
 @Table(name = "ofa_upliner_details", schema = "one4all")
 public class UplinerDetails implements Serializable {
 
-    @Id
+	@Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "ofa_upliner_id")  // Primary key
-    private Long ofaUplinerId;
+    private Long id;
 
-    @Column(name = "ofa_stage_no")
-    private int ofaStageNo;
+    @Column(name = "member_id", nullable = false)
+    private String memberId; // References ofa_user_reg_details.ofa_member_id
 
-    // Refers to the current member
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "ofa_member_id")
-    private Member member;
+    @Column(name = "upliner_id")
+    private String uplinerId; // References ofa_user_reg_details.ofa_member_id, indicates the upliner for this member
 
-    // Refers to the upliner (another member)
-    // Rename the column to avoid conflict with the primary key
-    @ManyToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "ofa_upliner_member_id")  // Renamed to avoid conflict with primary key
-    private Member uplinerMember;
-
-    // Getters and setters
-    public Long getOfaUplinerId() {
-        return ofaUplinerId;
-    }
-
-    public void setOfaUplinerId(Long ofaUplinerId) {
-        this.ofaUplinerId = ofaUplinerId;
-    }
-
-    public int getOfaStageNo() {
-        return ofaStageNo;
-    }
-
-    public void setOfaStageNo(int ofaStageNo) {
-        this.ofaStageNo = ofaStageNo;
-    }
-
-    public Member getMember() {
-        return member;
-    }
-
-    public void setMember(Member member) {
-        this.member = member;
-    }
-
-    public Member getUplinerMember() {
-        return uplinerMember;
-    }
-
-    public void setUplinerMember(Member uplinerMember) {
-        this.uplinerMember = uplinerMember;
-    }
+    @Column(name = "upliner_level", nullable = false)
+    private Integer uplinerLevel; // Indicates the level of this upliner relationship (1 to 10)
+    @Transient
+    private String consumerMobile;
+	
+   
+    
 }

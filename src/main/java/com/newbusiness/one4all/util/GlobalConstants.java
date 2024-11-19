@@ -12,4 +12,6 @@ public static final String PAYMENT_DELETION_SUCCESS="Payment record successfully
 public static final String PAYMENT_DISTRIBUTED_SUCCESS="Payment distribution successfully completed to upliners.";
 public static final String REFFERAL_CREATION_ERROR="The referrer already has two direct downliners";
 public static final String DUPLICATE_PAYMENT_RECORD_FOUND="Record already exists with the provided ofaConsumerNo:";
+public static final String REFFERAR_CREATION_SUCCESS="successfully added refferar .";
+public static final String DUPLICATE_REFFERAR_RECORD_FOUND="Record already exists with the provided member ID:";
 }

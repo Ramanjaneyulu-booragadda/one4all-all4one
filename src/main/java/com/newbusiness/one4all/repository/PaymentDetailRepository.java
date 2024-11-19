@@ -1,6 +1,7 @@
 package com.newbusiness.one4all.repository;
 
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,4 +12,6 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetails, L
 	
 	 // Custom query method to find by ofaConsumerNo
     Optional<PaymentDetails> findByOfaConsumerNo(String ofaConsumerNo);
+    List<PaymentDetails> findAllByOfaConsumerNo(String ofaConsumerNo);
+    List<PaymentDetails> findByOfaParentConsumerNo(String ofaConsumerNo);
 }

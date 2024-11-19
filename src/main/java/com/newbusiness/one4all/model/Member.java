@@ -108,46 +108,8 @@ public class Member {
 
     @Column(name = "ofa_is_deleted", nullable = false)
     @NotNull(message = "{member.deleted.notnull}")
-    private Integer ofaIsDeleted;
- // Referring member (Upliner)
-    @ManyToOne
-    @JoinColumn(name = "referrer_id")
-    @JsonBackReference 
-    private Member referredBy;
-
-    // List of downline members (people referred by this member)
-    @OneToMany(mappedBy = "referredBy", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Member> downliners = new ArrayList();
-
-    @OneToMany(mappedBy = "uplinerMember", cascade = CascadeType.ALL)
-    private List<UplinerDetails> upliners;
-    
-    private int referralLevel;
-    public int getReferralLevel() {
-        return referralLevel;
-    }
-
-    public void setReferralLevel(int referralLevel) {
-        this.referralLevel = referralLevel;
-    }
-
-	public Member getReferredBy() {
-		return referredBy;
-	}
-
-	public void setReferredBy(Member referredBy) {
-		this.referredBy = referredBy;
-	}
-
-	public List<Member> getDownliners() {
-		return downliners;
-	}
-
-	public void setDownliners(List<Member> downliners) {
-		this.downliners = downliners;
-	}
-
+    private Integer ofaIsDeleted;   
+ 
 	public Long getOfaId() {
 		return ofaId;
 	}
@@ -276,14 +238,7 @@ public class Member {
 		this.ofaIsDeleted = ofaIsDeleted;
 	}
 
-	public List<UplinerDetails> getUpliners() {
-		return upliners;
-	}
-
-	public void setUpliners(List<UplinerDetails> upliners) {
-		this.upliners = upliners;
-	}
-
+	
 	
     
 }
