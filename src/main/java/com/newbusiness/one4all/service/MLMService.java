@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.PaymentDetails;
+import com.newbusiness.one4all.model.UplinerPaymentDetails;
 import com.newbusiness.one4all.repository.PaymentDetailRepository;
+import com.newbusiness.one4all.repository.UplinerPaymentDetailsRepository;
 import com.newbusiness.one4all.repository.UserRepository;
 import com.newbusiness.one4all.util.PaymentStatus;
 
@@ -31,7 +33,14 @@ public class MLMService {
 
 	@Autowired
 	private UserRepository userRepository;
-
+	
+	@Autowired
+	private PaymentDetailService paymentDetailService;
+	@Autowired
+	private UplinerPaymentDetailsRepository uplinerPaymentDetailsRepository;
+	
+	@Autowired
+	private ReferralService referralService;
 	/**
 	 * Retrieve the referral bonus amount from properties.
 	 */
@@ -55,13 +64,14 @@ public class MLMService {
 			Member referrer = referrerPerson.get();
 			// check his existing payment details if present
 			Optional<PaymentDetails> refPayement = paymentDetailRepository
-					.findByOfaConsumerNo(referrer.getOfaMemberId());
+					.findByOfaParentConsumerNo(referrer.getOfaMemberId());
+			
 			if (refPayement.isPresent()) {
 				// do update the payment
 				refpaymentDetails = new PaymentDetails();
 				refpaymentDetails.setOfaTotalAmount(referralBonus.add(refPayement.get().getOfaHelpAmount()));
 				refpaymentDetails.setOfaUpdatedAt(new Date());
-				refpaymentDetails.setOfaRefferalAmount(new BigDecimal(0));
+				refpaymentDetails.setOfaRefferalAmount(referralBonus);
 				paymentDetailRepository.save(refpaymentDetails);
 			} else {
 				refpaymentDetails = new PaymentDetails();
@@ -93,6 +103,7 @@ public class MLMService {
 	/**
 	 * Pay upliners up to 10 stages.
 	 */
+	
 	public BigDecimal payUpliners(PaymentDetails paymentDetails, List<UplinerWithMemberDetailsDTO> uplinerDetailsList,
 			BigDecimal remainingBalance) {
 		Map<Integer, BigDecimal> payoutScheme = getPayoutSchemeFromProperties();
@@ -105,24 +116,21 @@ public class MLMService {
 			if (remainingBalance.compareTo(payout) < 0) {
 				System.out.println("Insufficient balance to process upliner payout at stage: " + stage);
 				break; // Stop processing further upliners
-			}
-			// Check if payment details already exist for the upliner
+			} // Check if payment details already exist for the upliner
 			List<PaymentDetails> existingPaymentDetailsList = paymentDetailRepository
-					.findByOfaParentConsumerNo(upliner.getUplinerDetails().getOfaMemberId());
+					.findALLByOfaParentConsumerNo(upliner.getUplinerDetails().getOfaMemberId());
 
-			if (!existingPaymentDetailsList.isEmpty()) {
-				// Update the existing payment details
+			if (!existingPaymentDetailsList.isEmpty()) { // Update the existing payment details
 				PaymentDetails uplinerPayment = existingPaymentDetailsList.get(existingPaymentDetailsList.size() - 1);
-				uplinerPayment.setOfaHelpAmount(uplinerPayment.getOfaHelpAmount().subtract(payout)); // Add payout
-				uplinerPayment.setOfaUpdatedAt(new Date()); // Update timestamp
+				uplinerPayment.setOfaHelpAmount(uplinerPayment.getOfaHelpAmount().subtract(payout));
+				// Add payout uplinerPayment.setOfaUpdatedAt(new Date()); // Update timestamp
 				paymentDetailRepository.save(uplinerPayment);
 				System.out.println(
 						"Updated payment details for upliner: " + upliner.getUplinerDetails().getOfaMemberId());
-			} else {
-				// Create new payment details
-				PaymentDetails uplinerPayment = new PaymentDetails();
-				// Optional<Member>
-				// referrerPerson=userRepository.findByOfaMemberId(upliner.getUplinerDetails().getOfaMemberId());
+			} else { // Create new payment details
+				PaymentDetails uplinerPayment = new PaymentDetails(); //
+				Optional<Member> referrerPerson = userRepository
+						.findByOfaMemberId(upliner.getUplinerDetails().getOfaMemberId());
 				uplinerPayment.setOfaParentConsumerNo(upliner.getUplinerDetails().getOfaMemberId());
 				uplinerPayment.setOfaConsumerName(upliner.getUplinerDetails().getOfaFullName());
 				uplinerPayment.setOfaConsumerNo(upliner.getMemberId());
@@ -139,17 +147,104 @@ public class MLMService {
 				paymentDetailRepository.save(uplinerPayment);
 				System.out.println(
 						"Created new payment details for upliner: " + upliner.getUplinerDetails().getOfaMemberId());
-			}
-			// Deduct payout from remaining balance
+			} // Deduct payout fromremaining balance
 			remainingBalance = remainingBalance.subtract(payout);
 		}
 		return remainingBalance;
+	}
+	 
+	public PaymentDetails distributePaymentToUpliners(PaymentDetails paymentDetails) {
+	    // Fetch upliners for the member
+	    List<UplinerWithMemberDetailsDTO> upliners = referralService.getUpliners(paymentDetails.getOfaConsumerNo());
+
+	    // Fetch payout scheme (e.g., level-wise amounts)
+	    Map<Integer, BigDecimal> payoutScheme = getPayoutSchemeFromProperties();
+
+	    // Start with the full help amount
+	    BigDecimal remainingBalance = paymentDetails.getOfaHelpAmount();
+
+	    for (int level = 1; level <= upliners.size(); level++) {
+	        UplinerWithMemberDetailsDTO upliner = upliners.get(level - 1);
+	        BigDecimal payout = payoutScheme.getOrDefault(level, BigDecimal.ZERO);
+
+	        // Stop if remaining balance is insufficient
+			/*
+			 * if (remainingBalance.compareTo(payout) < 0) {
+			 * logUplinerPayment(paymentDetails.getTransactionRefId(), upliner, level,
+			 * payout, "INSUFFICIENT_BALANCE"); break; }
+			 */
+
+	        // Skip upliner if inactive
+			/*
+			 * if (!isUplinerActive(upliner.getUplinerDetails().getOfaMemberId())) {
+			 * logUplinerPayment(paymentDetails.getTransactionRefId(), upliner, level,
+			 * payout, "INACTIVE_UPLINER"); continue; }
+			 */
+
+	        // Check if payment already exists for this upliner and transaction
+	        List<UplinerPaymentDetails> existingPayment = uplinerPaymentDetailsRepository.findByTransactionRefIdAndUplinerId(paymentDetails.getTransactionRefId(),
+	                        upliner.getUplinerDetails().getOfaMemberId());
+
+	        if (existingPayment.isEmpty()) {
+	            // Update the existing payment record
+	            UplinerPaymentDetails uplinerPayment = existingPayment.get(0);
+	            uplinerPayment.setAmount(uplinerPayment.getAmount().add(payout));
+	            uplinerPayment.setUpdatedAt(new Date());
+	            uplinerPayment.setStatus("UPDATED");
+	            uplinerPaymentDetailsRepository.save(uplinerPayment);
+	        } else {
+	            // Create a new upliner payment record
+	            UplinerPaymentDetails uplinerPayment = new UplinerPaymentDetails();
+	            uplinerPayment.setTransactionRefId(paymentDetails.getTransactionRefId());
+	            uplinerPayment.setUplinerId(upliner.getUplinerDetails().getOfaMemberId());
+	            uplinerPayment.setUplinerName(upliner.getUplinerDetails().getOfaFullName());
+	            uplinerPayment.setUplinerLevel(level);
+	            uplinerPayment.setAmount(payout);
+	            uplinerPayment.setStatus("SUCCESS");
+	            uplinerPayment.setCreatedAt(new Date());
+	            uplinerPayment.setUpdatedAt(new Date());
+	            uplinerPaymentDetailsRepository.save(uplinerPayment);
+	        }
+
+	        // Deduct payout from remaining balance
+	        remainingBalance = remainingBalance.subtract(payout);
+
+	        // Update or create upliner's PaymentDetails record
+	        Optional<PaymentDetails> existingUplinerPayment = paymentDetailRepository
+	                .findByOfaParentConsumerNo(upliner.getUplinerDetails().getOfaMemberId());
+
+	        if (existingUplinerPayment.isPresent()) {
+	            PaymentDetails uplinerPaymentDetails = existingUplinerPayment.get();
+	            uplinerPaymentDetails.setOfaHelpAmount(uplinerPaymentDetails.getOfaHelpAmount().add(payout));
+	            uplinerPaymentDetails.setOfaUpdatedAt(new Date());
+	            paymentDetailRepository.save(uplinerPaymentDetails);
+	        } else {
+	            PaymentDetails uplinerPaymentDetails = new PaymentDetails();
+	            uplinerPaymentDetails.setOfaParentConsumerNo(upliner.getUplinerDetails().getOfaMemberId());
+	            uplinerPaymentDetails.setOfaConsumerName(upliner.getUplinerDetails().getOfaFullName());
+	            uplinerPaymentDetails.setOfaConsumerNo(paymentDetails.getOfaConsumerNo());
+	            uplinerPaymentDetails.setOfaHelpAmount(payout);
+	            uplinerPaymentDetails.setOfaRefferalAmount(BigDecimal.ZERO);
+	            uplinerPaymentDetails.setOfaMobile(upliner.getConsumerMobile());
+	            uplinerPaymentDetails.setOfaRefferarMobile(upliner.getUplinerDetails().getOfaMobileNo());
+	            uplinerPaymentDetails.setOfaPaymentStatus(PaymentStatus.PAID);
+	            uplinerPaymentDetails.setOfaStageNo(level);
+	            uplinerPaymentDetails.setOfaCreatedAt(new Date());
+	            uplinerPaymentDetails.setOfaUpdatedAt(new Date());
+	            uplinerPaymentDetails.setTransactionRefId(paymentDetails.getTransactionRefId());
+	            paymentDetailRepository.save(uplinerPaymentDetails);
+	        }
+	    }
+
+	    // Update remaining balance in main payment record
+	    paymentDetails.setOfaHelpAmount(remainingBalance);
+	   return  paymentDetailService.updatePayment(paymentDetails);
 	}
 
 	/**
 	 * Retrieve the payout scheme for upliners dynamically from properties.
 	 */
-	private Map<Integer, BigDecimal> getPayoutSchemeFromProperties() {
+	public Map<Integer, BigDecimal> getPayoutSchemeFromProperties() {
 		Map<Integer, BigDecimal> payoutScheme = new HashMap<>();
 		for (int level = 1; level <= 10; level++) {
 			String propertyKey = "mlm.payout.L" + level;

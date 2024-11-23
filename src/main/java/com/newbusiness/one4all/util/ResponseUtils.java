@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.util;
 
+import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,13 +9,20 @@ import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
+
 import com.newbusiness.one4all.dto.PaymentDetailDTO;
 import com.newbusiness.one4all.model.PaymentDetails;
 
-public class ResponseUtils {
+import de.huxhorn.sulky.ulid.ULID;
 
+public class ResponseUtils {
+	@Autowired
+	private Environment environment;
     public static String generateCorrelationID() {
-        return UUID.randomUUID().toString();
+    	ULID ulid = new ULID();
+	    return ulid.nextULID();
     }
 
     public static String getCurrentTimestamp() {
@@ -65,5 +73,7 @@ public class ResponseUtils {
         dto.setOfaParentConsumerNo(paymentDetails.getOfaParentConsumerNo());
         return dto;
     }
+    
+	
 }
 

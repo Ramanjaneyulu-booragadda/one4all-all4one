@@ -13,5 +13,6 @@ public interface PaymentDetailRepository extends JpaRepository<PaymentDetails, L
 	 // Custom query method to find by ofaConsumerNo
     Optional<PaymentDetails> findByOfaConsumerNo(String ofaConsumerNo);
     List<PaymentDetails> findAllByOfaConsumerNo(String ofaConsumerNo);
-    List<PaymentDetails> findByOfaParentConsumerNo(String ofaConsumerNo);
+    List<PaymentDetails> findALLByOfaParentConsumerNo(String ofaConsumerNo);
+    Optional<PaymentDetails> findByOfaParentConsumerNo(String ofaConsumerNo);
 }
