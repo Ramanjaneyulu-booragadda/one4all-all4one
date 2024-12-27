@@ -36,6 +36,7 @@ import com.newbusiness.one4all.service.PaymentDetailService;
 import com.newbusiness.one4all.service.ReferralService;
 import com.newbusiness.one4all.util.ApiResponse;
 import com.newbusiness.one4all.util.GlobalConstants;
+import com.newbusiness.one4all.util.PaymentStatus;
 import com.newbusiness.one4all.util.ResponseUtils;
 
 import jakarta.validation.Valid;
@@ -73,15 +74,10 @@ public class PaymentDetailController {
 		}
 		// Generate unique transaction ID
 		try {
-		paymentDetails.setTransactionRefId(ResponseUtils.generateCorrelationID());
-		paymentDetails.setOfaCreatedAt(new Date());
-		paymentDetails.setOfaUpdatedAt(new Date());
-
+		
 		// Save payment details
 		PaymentDetails savedPayment = paymentDetailService.addPayment(paymentDetails);
 
-		// Distribute payment to upliners
-		savedPayment=distributePaymentToUpliners(savedPayment);
 		ApiResponse apiResponse = ResponseUtils.buildApiResponse(
 				Collections.singletonList(Map.of("status", GlobalConstants.PAYMENT_CREATION_SUCCESS,
 						"errorCode", HttpStatus.CREATED, "message", Collections.singletonList(savedPayment))));
@@ -99,7 +95,7 @@ public class PaymentDetailController {
 	private PaymentDetails distributePaymentToUpliners(PaymentDetails paymentDetails) {
 		List<UplinerWithMemberDetailsDTO> upliners = referralService.getUpliners(paymentDetails.getOfaConsumerNo());
 		Map<Integer, BigDecimal> payoutScheme = mlmService.getPayoutSchemeFromProperties();
-		BigDecimal remainingBalance = paymentDetails.getOfaHelpAmount();
+		BigDecimal remainingBalance = paymentDetails.getOfaGivenAmount();
 
 		for (int level = 1; level <= upliners.size(); level++) {
 			UplinerWithMemberDetailsDTO upliner = upliners.get(level - 1);
@@ -115,8 +111,8 @@ public class PaymentDetailController {
 			uplinerPayment.setUplinerId(upliner.getUplinerDetails().getOfaMemberId());
 			uplinerPayment.setUplinerName(upliner.getUplinerDetails().getOfaFullName());
 			uplinerPayment.setUplinerLevel(level);
-			uplinerPayment.setAmount(payout);
-			uplinerPayment.setStatus("SUCCESS");
+			uplinerPayment.setReceivedAmount(remainingBalance);
+			uplinerPayment.setStatus(PaymentStatus.RECEIVED);
 			uplinerPayment.setCreatedAt(new Date());
 			uplinerPayment.setUpdatedAt(new Date());
 			uplinerPaymentDetailsRepository.save(uplinerPayment);
@@ -126,7 +122,7 @@ public class PaymentDetailController {
 		}
 
 		// Update remaining balance in main payment record
-		paymentDetails.setOfaHelpAmount(remainingBalance);
+		paymentDetails.setOfaTotalAmount(remainingBalance);
 		return paymentDetailService.updatePayment(paymentDetails);
 	}
 
@@ -187,15 +183,9 @@ public class PaymentDetailController {
 			// Adding different types of values to the map
 			paymentMap.put("ofaPaymentId", payment.getOfaPaymentId()); // Long
 			paymentMap.put("ofaConsumerNo", payment.getOfaConsumerNo()); // String
-			paymentMap.put("ofaParentConsumerNo", payment.getOfaParentConsumerNo()); // String
 			paymentMap.put("ofaConsumerName", payment.getOfaConsumerName()); // String
-			paymentMap.put("ofaHelpAmount", payment.getOfaHelpAmount()); // BigDecimal
-			paymentMap.put("ofaRefferalAmount", payment.getOfaRefferalAmount()); // BigDecimal
 			paymentMap.put("ofaMobile", payment.getOfaMobile()); // String
-			paymentMap.put("ofaRefferarNumber", payment.getOfaRefferarMobile()); // String
-			paymentMap.put("ofaStageNo", payment.getOfaStageNo()); // Integer
 			paymentMap.put("ofaPaymentStatus", payment.getOfaPaymentStatus()); // Enum (OfaPaymentStatus)
-			paymentMap.put("ofaCountdown", payment.getOfaCountdown()); // Integer
 			paymentMap.put("ofaCreatedAt", payment.getOfaCreatedAt()); // LocalDateTime
 			paymentMap.put("ofaUpdatedAt", payment.getOfaUpdatedAt()); // LocalDateTime
 

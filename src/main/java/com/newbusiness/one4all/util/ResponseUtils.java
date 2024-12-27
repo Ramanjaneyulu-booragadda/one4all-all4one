@@ -65,12 +65,10 @@ public class ResponseUtils {
         PaymentDetailDTO dto = new PaymentDetailDTO();
         dto.setOfaConsumerName(paymentDetails.getOfaConsumerName());
         dto.setOfaConsumerNo(paymentDetails.getOfaConsumerNo());
-        dto.setOfaHelpAmount(paymentDetails.getOfaHelpAmount());
+        dto.setOfaGivenAmount(paymentDetails.getOfaGivenAmount());
         dto.setOfaPaymentStatus(paymentDetails.getOfaPaymentStatus().name()); // Enum to String
-        dto.setOfaStageNo(paymentDetails.getOfaStageNo());
-        dto.setOfaRefferalAmount(paymentDetails.getOfaRefferalAmount());
         dto.setOfaMobile(paymentDetails.getOfaMobile());
-        dto.setOfaParentConsumerNo(paymentDetails.getOfaParentConsumerNo());
+        
         return dto;
     }
     

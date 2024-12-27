@@ -1,24 +1,25 @@
 package com.newbusiness.one4all.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
 import java.util.Set;
 
-import com.newbusiness.one4all.dto.LoginRequest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.newbusiness.one4all.dto.PaymentDetailDTO;
+import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.PaymentDetails;
 import com.newbusiness.one4all.repository.PaymentDetailRepository;
 import com.newbusiness.one4all.repository.UserRepository;
+import com.newbusiness.one4all.strategy.PaymentDistributionStrategy;
 import com.newbusiness.one4all.util.PaymentStatus;
+import com.newbusiness.one4all.util.ResponseUtils;
 
 @Service
 @Transactional(rollbackFor = Exception.class)
@@ -27,14 +28,35 @@ public class PaymentDetailService {
 	private PaymentDetailRepository paymentDetailRepository;
 	@Autowired
 	private UserRepository userRepository;
+	@Autowired
+	private PaymentDistributionService paymentDistributionService;
 
 	public PaymentDetails addPayment(PaymentDetails paymentDetails) {
-		// Here you can implement other registration logic, like encrypting the password
+		validatePayment(paymentDetails);
+		 // Step 1: Validate consumer existence
+        boolean consumerExists = userRepository.existsByOfaMemberId(paymentDetails.getOfaConsumerNo());
+        if (!consumerExists) {
+            throw new IllegalArgumentException("Consumer with ID " + paymentDetails.getOfaConsumerNo() + " does not exist.");
+        }
+		paymentDetails.setTransactionRefId(ResponseUtils.generateCorrelationID());
+		paymentDetails.setOfaPaymentStatus(PaymentStatus.PAID);
 		paymentDetails.setOfaCreatedAt(new Date());
 		paymentDetails.setOfaUpdatedAt(new Date());
-		paymentDetails.setOfaPaymentStatus(PaymentStatus.PAID);
-		paymentDetails.setOfaTotalAmount(paymentDetails.getOfaHelpAmount().add(paymentDetails.getOfaRefferalAmount()));
-		return paymentDetailRepository.save(paymentDetails);
+		paymentDetailRepository.save(paymentDetails);
+
+		// Distribute payments using dedicated service
+		paymentDistributionService.distributePayment(paymentDetails);
+
+		// Update payment details after distribution
+		paymentDetailRepository.save(paymentDetails);
+
+		return paymentDetails;
+	}
+
+	private void validatePayment(PaymentDetails paymentDetails) {
+		if (paymentDetails.getOfaGivenAmount().compareTo(BigDecimal.ZERO) <= 0) {
+			throw new IllegalArgumentException("Given amount must be greater than zero.");
+		}
 	}
 
 	public PaymentDetails updatePayment(PaymentDetails paymentDetails) {
@@ -43,7 +65,7 @@ public class PaymentDetailService {
 		PaymentDetails existingPaymentObj = null;
 		if (!existingPaymentList.isEmpty()) {
 			existingPaymentObj = existingPaymentList.get(0);
-			existingPaymentObj.setOfaHelpAmount(paymentDetails.getOfaHelpAmount());
+			existingPaymentObj.setOfaUpdatedAt(new Date());
 			paymentDetailRepository.save(existingPaymentObj);
 		}
 		return existingPaymentObj;
@@ -87,30 +109,30 @@ public class PaymentDetailService {
 		return new PaymentDetails();
 	}
 
-	public void addRefererWithPayment(PaymentDetails paymentDetails) throws IllegalStateException {
-		PaymentDetails savedPayment = addPayment(paymentDetails);
-
-		Optional<Member> referrerOpt = userRepository.findByOfaMemberId(paymentDetails.getOfaParentConsumerNo());
-		Optional<Member> referredMemberOpt = userRepository.findByOfaMemberId(paymentDetails.getOfaConsumerNo());
-
-		if (referrerOpt.isPresent() && referredMemberOpt.isPresent()) {
-			Member referredMember = referredMemberOpt.get();
-			Member referrer = referrerOpt.get();
-
-			/*
-			 * if (referrer.getDownliners().size() >= 2) { throw new
-			 * IllegalStateException("Referrer already has 2 direct members."); }
-			 * 
-			 * referredMember.setReferredBy(referrer);
-			 * referrer.setReferralLevel(determineReferralLevel(paymentDetails));
-			 */
-
-			userRepository.save(referredMember); // Update referred member
-			userRepository.save(referrer); // Update referrer
-		} else {
-			throw new IllegalArgumentException("Referrer or referred member not found.");
-		}
-	}
+//	public void addRefererWithPayment(PaymentDetails paymentDetails) throws IllegalStateException {
+//		PaymentDetails savedPayment = addPayment(paymentDetails);
+//
+//		Optional<Member> referrerOpt = userRepository.findByOfaMemberId(paymentDetails.getOfaParentConsumerNo());
+//		Optional<Member> referredMemberOpt = userRepository.findByOfaMemberId(paymentDetails.getOfaConsumerNo());
+//
+//		if (referrerOpt.isPresent() && referredMemberOpt.isPresent()) {
+//			Member referredMember = referredMemberOpt.get();
+//			Member referrer = referrerOpt.get();
+//
+//			/*
+//			 * if (referrer.getDownliners().size() >= 2) { throw new
+//			 * IllegalStateException("Referrer already has 2 direct members."); }
+//			 * 
+//			 * referredMember.setReferredBy(referrer);
+//			 * referrer.setReferralLevel(determineReferralLevel(paymentDetails));
+//			 */
+//
+//			userRepository.save(referredMember); // Update referred member
+//			userRepository.save(referrer); // Update referrer
+//		} else {
+//			throw new IllegalArgumentException("Referrer or referred member not found.");
+//		}
+//	}
 
 	public int determineReferralLevel(PaymentDetails paymentDetails) {
 		// Fetch the member who is being referred
