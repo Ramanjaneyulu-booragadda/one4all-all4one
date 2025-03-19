@@ -1,16 +1,19 @@
 package com.newbusiness.one4all.util;
 
-import java.math.BigDecimal;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import com.newbusiness.one4all.dto.PaymentDetailDTO;
 import com.newbusiness.one4all.model.PaymentDetails;
@@ -18,8 +21,7 @@ import com.newbusiness.one4all.model.PaymentDetails;
 import de.huxhorn.sulky.ulid.ULID;
 
 public class ResponseUtils {
-	@Autowired
-	private Environment environment;
+	
     public static String generateCorrelationID() {
     	ULID ulid = new ULID();
 	    return ulid.nextULID();
@@ -72,6 +74,47 @@ public class ResponseUtils {
         return dto;
     }
     
-	
+ // Extract roles from the JWT token
+    public static Set<String> getCurrentUserRoles() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+            Jwt jwt = (Jwt) authentication.getPrincipal();
+            return jwt.getClaimAsStringList("roles").stream().collect(Collectors.toSet());
+        }
+        throw new SecurityException("Unable to fetch roles from token.");
+    }
+
+    // Check if the user has a specific role
+    public static boolean hasRole(String role) {
+        return getCurrentUserRoles().contains(role);
+    }
+
+    // Check if the user has any of the provided roles
+    public static boolean hasAnyRole(String... roles) {
+        Set<String> userRoles = getCurrentUserRoles();
+        for (String role : roles) {
+            if (userRoles.contains(role)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public static ApiResponse buildErrorResponse(String status, int code, String descriptionKey) {
+        String correlationId = generateCorrelationID();
+        String transactionDate = getCurrentTimestamp();
+
+        String description = GlobalConstants.ERROR_MESSAGES.getOrDefault(descriptionKey, "An unknown error occurred.");
+
+        Map<String, Object> errorResponse = Map.of(
+                "status", status,
+                "code", code,
+                "description", description
+        );
+
+        return new ApiResponse(correlationId, transactionDate, status, List.of(errorResponse), null);  // Matches the first constructor
+    }
+
+
 }
 

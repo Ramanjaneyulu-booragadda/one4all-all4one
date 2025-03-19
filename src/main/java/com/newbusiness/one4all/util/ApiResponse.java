@@ -10,44 +10,38 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @NoArgsConstructor
+@Setter
+@Getter
 public class ApiResponse {
-	 @JsonProperty("corelationID")
-    private String transactionID;
-	  @JsonProperty("transactionDate")
-    private String transactionDate;
-	  @JsonProperty("message")
-    private List<Map<String, Object>> messages;
+	@JsonProperty("corelationID")
+	private String transactionID;
+	@JsonProperty("transactionDate")
+	private String transactionDate;
+	@JsonProperty("message")
+	private List<Map<String, Object>> messages;
+	@JsonProperty("errorDetails")
+	private List<Map<String, Object>> errorDetails;
+	@JsonProperty("status")
+	private String status;
 
-    public ApiResponse(String transactionID, String transactionDate, List<Map<String, Object>> messages) {
+	// Constructor for error responses
+    public ApiResponse(String transactionID, String transactionDate, String status, List<Map<String, Object>> errorDetails, List<Map<String, Object>> messages) {
         this.transactionID = transactionID;
         this.transactionDate = transactionDate;
+        this.status = status;
+        this.errorDetails = errorDetails;
         this.messages = messages;
     }
 
-	public String getCorrelationID() {
-		return transactionID;
-	}
+    // Constructor for messages-only responses
+    public ApiResponse(String transactionID, String transactionDate, List<Map<String, Object>> messages) {
+        this.transactionID = transactionID;
+        this.transactionDate = transactionDate;
+        this.status = "Success";
+        this.errorDetails = null;
+        this.messages = messages;
+    }
 
-	public void setCorrelationID(String transactionID) {
-		this.transactionID = transactionID;
-	}
+	
 
-	public String getTransactionDate() {
-		return transactionDate;
-	}
-
-	public void setTransactionDate(String transactionDate) {
-		this.transactionDate = transactionDate;
-	}
-
-	public List<Map<String, Object>> getMessages() {
-		return messages;
-	}
-
-	public void setMessages(List<Map<String, Object>> messages) {
-		this.messages = messages;
-	}
-
-    
 }
-

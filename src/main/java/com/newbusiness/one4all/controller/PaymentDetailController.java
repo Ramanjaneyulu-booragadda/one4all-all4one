@@ -1,8 +1,6 @@
 package com.newbusiness.one4all.controller;
 
-import java.math.BigDecimal;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,23 +18,15 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.newbusiness.one4all.dto.PaymentDetailDTO;
-import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.model.PaymentDetails;
-import com.newbusiness.one4all.model.UplinerPaymentDetails;
-import com.newbusiness.one4all.repository.UplinerPaymentDetailsRepository;
-import com.newbusiness.one4all.repository.UserRepository;
-import com.newbusiness.one4all.service.MLMService;
 import com.newbusiness.one4all.service.PaymentDetailService;
 import com.newbusiness.one4all.service.ReferralService;
 import com.newbusiness.one4all.util.ApiResponse;
 import com.newbusiness.one4all.util.GlobalConstants;
-import com.newbusiness.one4all.util.PaymentStatus;
 import com.newbusiness.one4all.util.ResponseUtils;
 
 import jakarta.validation.Valid;
@@ -50,13 +40,7 @@ public class PaymentDetailController {
 	@Autowired
 	private PaymentDetailService paymentDetailService;
 	@Autowired
-	private MLMService mlmService;
-	@Autowired
-	private UserRepository userRepository;
-	@Autowired
 	private ReferralService referralService;
-	@Autowired
-	private UplinerPaymentDetailsRepository uplinerPaymentDetailsRepository;
 
 	@PostMapping("/givehelp")
 	public ResponseEntity<?> giveHelp(@Valid @RequestBody PaymentDetails paymentDetails, BindingResult result) {
@@ -74,8 +58,17 @@ public class PaymentDetailController {
 		}
 		// Generate unique transaction ID
 		try {
-		
-		// Save payment details
+			// ✅ Validate if payment initiator is a direct child
+	        boolean isDirectChild = referralService.isDirectChildFromUplinerDetails( paymentDetails.getOfaConsumerNo());
+
+	        if (!isDirectChild) {
+	            logger.warn("Validation Failed: Member {} is not a direct child of referrer {}",
+	                paymentDetails.getOfaConsumerNo());
+	            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+	                .body("Payment can only be initiated by direct children of the referrer.");
+	        }
+
+	        // ✅ Proceed with payment processing
 		PaymentDetails savedPayment = paymentDetailService.addPayment(paymentDetails);
 
 		ApiResponse apiResponse = ResponseUtils.buildApiResponse(
@@ -92,41 +85,7 @@ public class PaymentDetailController {
 
 	
 
-	private PaymentDetails distributePaymentToUpliners(PaymentDetails paymentDetails) {
-		List<UplinerWithMemberDetailsDTO> upliners = referralService.getUpliners(paymentDetails.getOfaConsumerNo());
-		Map<Integer, BigDecimal> payoutScheme = mlmService.getPayoutSchemeFromProperties();
-		BigDecimal remainingBalance = paymentDetails.getOfaGivenAmount();
-
-		for (int level = 1; level <= upliners.size(); level++) {
-			UplinerWithMemberDetailsDTO upliner = upliners.get(level - 1);
-			BigDecimal payout = payoutScheme.getOrDefault(level, BigDecimal.ZERO);
-
-			if (remainingBalance.compareTo(payout) < 0) {
-				break; // Stop if balance runs out
-			}
-
-			// Insert upliner payment record
-			UplinerPaymentDetails uplinerPayment = new UplinerPaymentDetails();
-			uplinerPayment.setTransactionRefId(paymentDetails.getTransactionRefId());
-			uplinerPayment.setUplinerId(upliner.getUplinerDetails().getOfaMemberId());
-			uplinerPayment.setUplinerName(upliner.getUplinerDetails().getOfaFullName());
-			uplinerPayment.setUplinerLevel(level);
-			uplinerPayment.setReceivedAmount(remainingBalance);
-			uplinerPayment.setStatus(PaymentStatus.RECEIVED);
-			uplinerPayment.setCreatedAt(new Date());
-			uplinerPayment.setUpdatedAt(new Date());
-			uplinerPaymentDetailsRepository.save(uplinerPayment);
-
-			// Deduct payout from balance
-			remainingBalance = remainingBalance.subtract(payout);
-		}
-
-		// Update remaining balance in main payment record
-		paymentDetails.setOfaTotalAmount(remainingBalance);
-		return paymentDetailService.updatePayment(paymentDetails);
-	}
-
-	// READ (Get Help Status by ID)
+		// READ (Get Help Status by ID)
 	@GetMapping("/{id}")
 	public ResponseEntity<?> getHelpStatusById(@PathVariable Long id) {
 		logger.info("Get payment request received for ID: {}", id);
@@ -139,19 +98,7 @@ public class PaymentDetailController {
 		return ResponseEntity.ok(apiResponse);
 	}
 
-	// UPDATE (Receive Help)
-	@PutMapping("/receivehelp/{id}")
-	public ResponseEntity<?> receiveHelp(@PathVariable Long id, @Valid @RequestBody PaymentDetailDTO paymentDetailDTO) {
-		logger.info("Update payment request received for ID: {}: {}", id, paymentDetailDTO);
-		Optional<PaymentDetails> updatedPaymentDetail = paymentDetailService.updatePayment(id, paymentDetailDTO);
-		if (!updatedPaymentDetail.isPresent()) {
-			return ResponseEntity.status(HttpStatus.NOT_FOUND).body(GlobalConstants.PAYMENT_NOT_FOUND);
-		}
-		ApiResponse apiResponse = ResponseUtils
-				.buildApiResponse(Collections.singletonList(Map.of("status", GlobalConstants.PAYMENT_UPDATE_SUCCESS,
-						"message", Collections.singletonList(updatedPaymentDetail.get()))));
-		return ResponseEntity.ok(apiResponse);
-	}
+	
 
 	// DELETE (Cancel Help)
 	@DeleteMapping("/{id}")

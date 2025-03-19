@@ -57,4 +57,6 @@ public class PaymentDetails {
 	private BigDecimal ofaGivenAmount;
 	@Column(name = "ofa_transaction_ref_id", nullable = false, unique = true)
 	private String transactionRefId;
+    @Column(name = "ofa_stage_no")
+    private Integer ofaStageNo;
 }

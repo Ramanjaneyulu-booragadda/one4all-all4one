@@ -1,5 +1,7 @@
 package com.newbusiness.one4all.util;
 
+import java.util.Map;
+
 public class GlobalConstants {
 public static final String USER_REGISTRATION_SUCCESS="User created successfully.";
 public static final String USER_LOGIN_SUCCESS="Login successful.";
@@ -14,4 +16,15 @@ public static final String REFFERAL_CREATION_ERROR="The referrer already has two
 public static final String DUPLICATE_PAYMENT_RECORD_FOUND="Record already exists with the provided ofaConsumerNo:";
 public static final String REFFERAR_CREATION_SUCCESS="successfully added refferar .";
 public static final String DUPLICATE_REFFERAR_RECORD_FOUND="Record already exists with the provided member ID:";
+public static final String CLIENT_ID="one4all";
+
+public static final Map<String, String> ERROR_MESSAGES = Map.of(
+        "INVALID_CLIENT_TOKEN", "Invalid or missing client token.",
+        "INVALID_USER_TOKEN", "Invalid or missing user token.",
+        "USER_LOGIN_FAILED", "Invalid credentials.",
+        "TOKEN_EXPIRED", "The provided token has expired.",
+        "UNAUTHORIZED_ACCESS", "You do not have permission to access this resource."
+    );
+
+    
 }

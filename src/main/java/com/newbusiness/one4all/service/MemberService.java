@@ -1,5 +1,11 @@
 package com.newbusiness.one4all.service;
 
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
@@ -9,14 +15,14 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-import java.util.stream.Collectors;
-import java.util.List;
-
 import com.newbusiness.one4all.dto.LoginRequest;
 import com.newbusiness.one4all.model.Member;
+import com.newbusiness.one4all.model.Role;
+import com.newbusiness.one4all.repository.RoleRepository;
 import com.newbusiness.one4all.repository.UserRepository;
 import com.newbusiness.one4all.util.ResponseUtils;
+
+
 
 @Service
 public class MemberService implements UserDetailsService {
@@ -32,12 +38,21 @@ public class MemberService implements UserDetailsService {
     @Autowired
     @Lazy
     private PasswordEncoder passwordEncoder; // Autowire the password encoder
+@Autowired
+	private RoleRepository roleRepository;
 
     // Register a new member
-    public Member registerNewMember(Member member) {
+    public Member registerNewMember(Member member, Set<String> roleNames) {
         // Generate the custom ID
         member.setOfaMemberId(ResponseUtils.generateCustomId(idPrefix, numberLength));
         member.setOfaPassword(passwordEncoder.encode(member.getOfaPassword()));
+     // Retrieve roles from the database
+        Set<Role> roles = roleNames.stream()
+                .map(roleName -> roleRepository.findByRoleName(roleName))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        member.setRoles(roles);
         return userRepository.save(member);
     }
 
@@ -111,4 +126,15 @@ public class MemberService implements UserDetailsService {
             return userRepository.save(member);
         }).collect(Collectors.toList());
     }
+    
+    public void assignRoles(Member member, Set<String> roleNames) {
+        Set<Role> roles = roleNames.stream()
+                .map(roleName -> roleRepository.findByRoleName(roleName))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        member.setRoles(roles);
+        userRepository.save(member);
+    }
+
 }

@@ -13,7 +13,7 @@ import lombok.Data;
 public class DownlinerHierarchyDTO {
     private String memberId; // Current member ID
     private String fullName; // Member's full name
-    private int positionLeft; // Number of positions left in this member's binary tree
+    private int leftOverChildrenPosition; // Number of positions left in this member's binary tree
     private List<DownlinerHierarchyDTO> children; // Recursive list of downliner hierarchies
     //private List<Member> allChildrenMembers; // All children member details
 

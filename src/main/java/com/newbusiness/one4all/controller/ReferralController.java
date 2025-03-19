@@ -38,8 +38,7 @@ import jakarta.validation.Valid;
 public class ReferralController {
 
 	private static final Logger logger = LoggerFactory.getLogger(ReferralController.class);
-	@Autowired
-	private MemberService userService;
+	
 	@Autowired
 	private ReferralService referralService; 
 	
@@ -59,7 +58,7 @@ public class ReferralController {
 	    }
 
 	    try {
-	        // Check if the payment details already exist based on ofaConsumerNo
+	        // Check if the referrer details already exist based on ofaConsumerNo
 	        Optional<ReferrerDetails> existingreferrral = referralService.findByMemberId(referrerDetails.getMemberId());
 	        
 	        if (existingreferrral.isPresent()) {

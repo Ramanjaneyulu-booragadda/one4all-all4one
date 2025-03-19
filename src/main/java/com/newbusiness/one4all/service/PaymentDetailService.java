@@ -30,6 +30,8 @@ public class PaymentDetailService {
 	private UserRepository userRepository;
 	@Autowired
 	private PaymentDistributionService paymentDistributionService;
+	@Autowired
+	private ReferralService referralService;
 
 	public PaymentDetails addPayment(PaymentDetails paymentDetails) {
 		validatePayment(paymentDetails);
@@ -42,6 +44,9 @@ public class PaymentDetailService {
 		paymentDetails.setOfaPaymentStatus(PaymentStatus.PAID);
 		paymentDetails.setOfaCreatedAt(new Date());
 		paymentDetails.setOfaUpdatedAt(new Date());
+		//paymentDistributionService.addPreviousPaymentsToCurrent(paymentDetails);
+		//paymentDetails.setOfaGivenAmount(updatedGivenAmount);
+				
 		paymentDetailRepository.save(paymentDetails);
 
 		// Distribute payments using dedicated service
@@ -54,10 +59,25 @@ public class PaymentDetailService {
 	}
 
 	private void validatePayment(PaymentDetails paymentDetails) {
-		if (paymentDetails.getOfaGivenAmount().compareTo(BigDecimal.ZERO) <= 0) {
-			throw new IllegalArgumentException("Given amount must be greater than zero.");
-		}
+	    if (paymentDetails.getOfaGivenAmount().compareTo(BigDecimal.ZERO) <= 0) {
+	        throw new IllegalArgumentException("Given amount must be greater than zero.");
+	    }
+
+	    // Check if consumer exists
+	    boolean consumerExists = userRepository.existsByOfaMemberId(paymentDetails.getOfaConsumerNo());
+	    if (!consumerExists) {
+	        throw new IllegalArgumentException("Consumer with ID " + paymentDetails.getOfaConsumerNo() + " does not exist.");
+	    }
+
+	    // Ensure only direct children can make direct payments via upliner relationship
+	    boolean isDirectChild = referralService.isDirectChildFromUplinerDetails(
+	        paymentDetails.getOfaConsumerNo()
+	    );
+	    if (!isDirectChild) {
+	        throw new IllegalArgumentException("Payment can only be made by direct children linked via upliner relationship.");
+	    }
 	}
+
 
 	public PaymentDetails updatePayment(PaymentDetails paymentDetails) {
 		List<PaymentDetails> existingPaymentList = paymentDetailRepository
@@ -81,17 +101,7 @@ public class PaymentDetailService {
 		return paymentDetailRepository.findAll();
 	}
 
-	// UPDATE
-	public Optional<PaymentDetails> updatePayment(Long id, PaymentDetailDTO dto) {
-		Optional<PaymentDetails> existingPaymentDetails = paymentDetailRepository.findById(id);
-		if (existingPaymentDetails.isPresent()) {
-			PaymentDetails updatedPaymentDetails = convertToEntity(dto);
-			updatedPaymentDetails.setOfaPaymentId(id); // Ensure the ID remains the same
-			// Additional update logic can be added here
-			return Optional.of(paymentDetailRepository.save(updatedPaymentDetails));
-		}
-		return Optional.empty();
-	}
+	
 
 	// DELETE
 	public boolean deletePayment(Long id) {
@@ -103,36 +113,7 @@ public class PaymentDetailService {
 		return false;
 	}
 
-	// Convert DTO to Entity (this should handle conversion logic)
-	private PaymentDetails convertToEntity(PaymentDetailDTO dto) {
-		// Implement the conversion logic from DTO to PaymentDetail entity
-		return new PaymentDetails();
-	}
-
-//	public void addRefererWithPayment(PaymentDetails paymentDetails) throws IllegalStateException {
-//		PaymentDetails savedPayment = addPayment(paymentDetails);
-//
-//		Optional<Member> referrerOpt = userRepository.findByOfaMemberId(paymentDetails.getOfaParentConsumerNo());
-//		Optional<Member> referredMemberOpt = userRepository.findByOfaMemberId(paymentDetails.getOfaConsumerNo());
-//
-//		if (referrerOpt.isPresent() && referredMemberOpt.isPresent()) {
-//			Member referredMember = referredMemberOpt.get();
-//			Member referrer = referrerOpt.get();
-//
-//			/*
-//			 * if (referrer.getDownliners().size() >= 2) { throw new
-//			 * IllegalStateException("Referrer already has 2 direct members."); }
-//			 * 
-//			 * referredMember.setReferredBy(referrer);
-//			 * referrer.setReferralLevel(determineReferralLevel(paymentDetails));
-//			 */
-//
-//			userRepository.save(referredMember); // Update referred member
-//			userRepository.save(referrer); // Update referrer
-//		} else {
-//			throw new IllegalArgumentException("Referrer or referred member not found.");
-//		}
-//	}
+	
 
 	public int determineReferralLevel(PaymentDetails paymentDetails) {
 		// Fetch the member who is being referred

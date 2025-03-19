@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -15,8 +16,10 @@ import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.ReferrerDetails;
 import com.newbusiness.one4all.model.UplinerDetails;
+import com.newbusiness.one4all.model.UplinerPaymentDetails;
 import com.newbusiness.one4all.repository.ReferrerDetailsRepository;
 import com.newbusiness.one4all.repository.UplinerDetailsRepository;
+import com.newbusiness.one4all.repository.UplinerPaymentDetailsRepository;
 import com.newbusiness.one4all.repository.UserRepository;
 
 @Service
@@ -31,38 +34,50 @@ public class ReferralService {
 
     @Autowired
     private UplinerDetailsRepository uplinerDetailsRepository;
+    @Autowired
+    private UplinerPaymentDetailsRepository uplinerPaymentDetailsRepository;
 
     public ReferrerDetails addReferer(String memberId, String referrerId, int referralLevel) {
-        // Check if the member exists in ofa_user_reg_details
+        // ✅ 1. Check if the member exists in ofa_user_reg_details
         Optional<Member> memberOpt = memberRepository.findByOfaMemberId(memberId);
         if (memberOpt.isEmpty()) {
             throw new IllegalArgumentException("Member does not exist with ID: " + memberId);
         }
 
-        // Check if the referrer exists in ofa_user_reg_details
+        // ✅ 2. Check if the referrer exists in ofa_user_reg_details
         Optional<Member> referrerOpt = memberRepository.findByOfaMemberId(referrerId);
         if (referrerOpt.isEmpty()) {
             throw new IllegalArgumentException("Referrer does not exist with ID: " + referrerId);
         }
-        // Check if the referrer already has 2 immediate members
+
+        // ✅ 3. Fetch existing children of the referrer
         List<ReferrerDetails> immediateMembers = referrerDetailsRepository.findAllByReferrerId(referrerId);
-        if (immediateMembers.size() >= 2) {
-            throw new IllegalStateException("Referrer already has 2 immediate members and cannot add more.");
+
+        // ✅ 4. Validation for SPLN-prefixed IDs
+        if (referrerId.startsWith("SPLN")) {
+            if (immediateMembers.size() >= 1) {
+                throw new IllegalStateException("SPLN-prefixed referrer already has one child.");
+            }
+        } 
+        // ✅ 5. Validation for Non-SPLN IDs (Binary Tree Rule)
+        else {
+            if (immediateMembers.size() >= 2) {
+                throw new IllegalStateException("Referrer already has 2 direct members and cannot add more.");
+            }
         }
 
-        // Create or update the entry in ofa_referrer_details
+        // ✅ 6. Create or update the entry in ofa_referrer_details
         ReferrerDetails referrerDetails = new ReferrerDetails();
         referrerDetails.setMemberId(memberId);
         referrerDetails.setReferrerId(referrerId);
         referrerDetails.setReferralLevel(referralLevel);
         referrerDetailsRepository.save(referrerDetails);
 
-        // Establish upliner relationships up to 10 levels
+        // ✅ 7. Establish upliner relationships up to 10 levels
         List<UplinerDetails> uplinerDetailsList = new ArrayList<>();
         Optional<ReferrerDetails> currentReferrer = referrerDetailsRepository.findByMemberId(memberId);
         int currentLevel = 1;
 
-        // Traverse up the hierarchy, adding upliner relationships up to 10 levels
         while (currentReferrer.isPresent() && currentLevel <= 10) {
             UplinerDetails uplinerDetails = new UplinerDetails();
             uplinerDetails.setMemberId(memberId);
@@ -74,11 +89,15 @@ public class ReferralService {
             currentLevel++;
         }
 
-        // Save upliner relationships in bulk
+        // ✅ 8. Save upliner relationships in bulk
         uplinerDetailsRepository.saveAll(uplinerDetailsList);
 
         return referrerDetails;
     }
+
+    
+    
+    
     
     public Optional<ReferrerDetails> findByMemberId(String ofaConsumerNo) {
         return referrerDetailsRepository.findByMemberId(ofaConsumerNo);
@@ -114,13 +133,24 @@ public class ReferralService {
             Optional<Member> currentMemberOpt = memberRepository.findByOfaMemberId(uplinerDetails.getMemberId());
 
             // Build the DTO
-            return new UplinerWithMemberDetailsDTO(
-                uplinerDetails.getId(),
-                uplinerDetails.getMemberId(),
-                uplinerDetails.getUplinerLevel(),
-                currentMemberOpt.get().getOfaMobileNo(),
-                uplinerMemberOpt.orElse(null) // Add upliner member details, or null if not found
-            );
+            UplinerWithMemberDetailsDTO detailsDTO=new UplinerWithMemberDetailsDTO();
+            detailsDTO.setId(uplinerDetails.getId());
+            detailsDTO.setMemberId(uplinerDetails.getMemberId());
+            detailsDTO.setUplinerLevel(uplinerDetails.getUplinerLevel());
+            detailsDTO.setConsumerMobile(currentMemberOpt.get().getOfaMobileNo());
+            //detailsDTO.setUplinerDetails(uplinerMemberOpt.orElse(null) );
+            detailsDTO.setLevelAmount(getPayoutForPhase(uplinerDetails.getUplinerLevel()));
+            detailsDTO.setUplinerName(uplinerMemberOpt.get().getOfaFullName());
+            detailsDTO.setUplinerMobileNo(uplinerMemberOpt.get().getOfaMobileNo());
+            detailsDTO.setUplinerMemberId(uplinerMemberOpt.get().getOfaMemberId());
+            /*
+			 * return new UplinerWithMemberDetailsDTO( uplinerDetails.getId(),
+			 * uplinerDetails.getMemberId(), uplinerDetails.getUplinerLevel(),
+			 * currentMemberOpt.get().getOfaMobileNo(), uplinerMemberOpt.orElse(null) ,//
+			 * Add upliner member details, or null if not found
+			 * getPayoutForPhase(uplinerDetails.getUplinerLevel()) );
+			 */
+            return detailsDTO;
         }).collect(Collectors.toList());
     }
 
@@ -164,6 +194,49 @@ public class ReferralService {
         );
         
     }
+    public boolean isDirectChild(String memberId, String referrerId) {
+        // Fetch all direct children of the referrer
+        List<ReferrerDetails> immediateMembers = referrerDetailsRepository.findAllByReferrerId(referrerId);
 
+        // Check if the memberId exists in the direct children list
+        return immediateMembers.stream()
+            .anyMatch(referral -> referral.getMemberId().equals(memberId));
+    }
+    public boolean isDirectChildFromUplinerDetails(String consumerNo) {
+        // Fetch the upliner details for the given consumerNo
+        List<UplinerPaymentDetails> uplinerDetails = uplinerPaymentDetailsRepository
+            .findByUplinerId(consumerNo);
+
+        // Check if the upliner details exist and the level is 1 (Direct Child)
+        return uplinerDetails.stream()
+            .anyMatch(upliner -> upliner.getUplinerLevel() == 1);
+    }
+
+    private BigDecimal getPayoutForPhase(int level) {
+		switch (level) {
+		case 1:
+			return new BigDecimal(2000);
+		case 2:
+			return new BigDecimal(1000);
+		case 3:
+			return new BigDecimal(1000);
+		case 4:
+			return new BigDecimal(2500);
+		case 5:
+			return new BigDecimal(5000);
+		case 6:
+			return new BigDecimal(10000);
+		case 7:
+			return new BigDecimal(20000);
+		case 8:
+			return new BigDecimal(30000);
+		case 9:
+			return new BigDecimal(40000);
+		case 10:
+			return new BigDecimal(50000);
+		default:
+			return BigDecimal.ZERO;
+		}
+	}
 }
 
