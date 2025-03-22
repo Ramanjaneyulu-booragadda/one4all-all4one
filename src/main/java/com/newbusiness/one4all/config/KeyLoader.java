@@ -1,6 +1,7 @@
 package com.newbusiness.one4all.config;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.security.KeyFactory;
@@ -45,7 +46,16 @@ public class KeyLoader {
         }
     }
 
-    public static KeyPair loadKeyPair(String privateKeySource, String publicKeySource) {
+    public static KeyPair loadKeyPair(String privateKeySource, String publicKeySource) throws IOException, Exception {
+    	System.out.println("🔐 [DEBUG] Reading public key from: " + publicKeySource);
+    	System.out.println("🔐 [DEBUG] Reading private key from: " + privateKeySource);
+
+    	String publicKeyContent = readPemContent(new ClassPathResource(publicKeySource).getInputStream());
+    	String privateKeyContent = readPemContent(new ClassPathResource(privateKeySource).getInputStream());
+
+    	System.out.println("🔐 Public Key Content:\n" + publicKeyContent);
+    	System.out.println("🔐 Private Key Content:\n" + privateKeyContent);
+
         return new KeyPair(loadPublicKey(publicKeySource), loadPrivateKey(privateKeySource));
     }
 }

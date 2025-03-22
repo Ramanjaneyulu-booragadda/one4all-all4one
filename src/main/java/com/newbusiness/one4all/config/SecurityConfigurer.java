@@ -102,4 +102,6 @@ public class SecurityConfigurer {
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
+    
+    
 }

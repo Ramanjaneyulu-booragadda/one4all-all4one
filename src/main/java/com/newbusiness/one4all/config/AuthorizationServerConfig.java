@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.config;
 
+import java.io.IOException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.RSAPrivateKey;
@@ -56,7 +57,7 @@ public class AuthorizationServerConfig {
     private String publicKeySource;
 
     @Bean
-    public KeyPair rsaKeyPair() {
+    public KeyPair rsaKeyPair() throws IOException, Exception {
         return KeyLoader.loadKeyPair(privateKeySource, publicKeySource);
     }
     @Bean
