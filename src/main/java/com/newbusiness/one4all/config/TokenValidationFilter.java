@@ -54,7 +54,9 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 		String requestUri = request.getRequestURI();
 		logger.info("Processing request: {}", requestUri);
 
-		if (requestUri.equals("/api/login") || requestUri.equals("/api/register")) {
+		if (requestUri.equals("/api/login") || requestUri.equals("/api/register")
+				||requestUri.equals("/api/admin/login") || requestUri.equals("/api/admin/register")
+				 || requestUri.equals("/api/admin/reset-password-request") || requestUri.equals("/api/reset-password-request")) {
 			filterChain.doFilter(request, response);
 			return;
 		}

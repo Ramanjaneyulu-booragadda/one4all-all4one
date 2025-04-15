@@ -48,10 +48,10 @@ public class SecurityConfigurer {
 
     	
     	http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/register", "/api/login", "/api/bulk-register"))
+            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/register", "/api/login", "/api/bulk-register","/api/admin/register","/api/admin/login","/api/reset-password-request"))
             .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Custom CORS configuration
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/register", "/api/login", "/api/bulk-register").permitAll()  
+                .requestMatchers("/api/register", "/api/login", "/api/bulk-register","/api/admin/register","/api/admin/login","/api/reset-password-request").permitAll()  
                 .anyRequest().authenticated() // Authenticate all other requests
             )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session

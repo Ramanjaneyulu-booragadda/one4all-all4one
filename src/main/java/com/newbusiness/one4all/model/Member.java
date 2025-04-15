@@ -82,7 +82,7 @@ public class Member {
     @Column(name = "ofa_nationality", nullable = false)
     @NotBlank(message = "{member.nationality.notblank}")
     @Size(max = 50, message = "{member.nationality.size}")
-    private String ofaNationallity;
+    private String ofaNationality;
 
     @Column(name = "ofa_password", nullable = false)
     @NotBlank(message = "{member.password.notblank}")
@@ -197,12 +197,12 @@ public class Member {
 		this.ofaEmail = ofaEmail;
 	}
 
-	public String getOfaNationallity() {
-		return ofaNationallity;
+	public String getOfaNationality() {
+		return ofaNationality;
 	}
 
-	public void setOfaNationallity(String ofaNationallity) {
-		this.ofaNationallity = ofaNationallity;
+	public void setOfaNationality(String ofaNationality) {
+		this.ofaNationality = ofaNationality;
 	}
 
 	public String getOfaPassword() {
