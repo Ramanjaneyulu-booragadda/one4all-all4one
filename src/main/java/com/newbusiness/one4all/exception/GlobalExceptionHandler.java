@@ -1,6 +1,7 @@
 
 package com.newbusiness.one4all.exception;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.HashMap;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import com.newbusiness.one4all.util.ApiResponse;
+import com.newbusiness.one4all.util.ResponseUtils;
 
 import jakarta.persistence.PersistenceException;
 
@@ -48,28 +51,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
 	}
 
-	/*
-	 * @ExceptionHandler(DataIntegrityViolationException.class) public
-	 * ResponseEntity<Object>
-	 * handleDataIntegrityViolation(DataIntegrityViolationException ex, WebRequest
-	 * request) { logger.error("Data Integrity Violation: ", ex);
-	 * 
-	 * // You can provide a more specific message depending on the exact
-	 * requirements String message = "Database error occurred"; if (ex.getCause()
-	 * instanceof ConstraintViolationException) { message = "Database error: " +
-	 * ex.getRootCause().getMessage(); } return
-	 * ResponseEntity.status(HttpStatus.CONFLICT).body(message);
-	 * 
-	 * 
-	 * List<Map<String, Object>> message =
-	 * Collections.singletonList(Map.of("status", "Internal Error", "errorCode",
-	 * HttpStatus.INTERNAL_SERVER_ERROR, "message",
-	 * Collections.singletonList(ex.getMessage())));
-	 * 
-	 * ApiResponse apiResponse = new ApiResponse(generateCorrelationID(),
-	 * getCurrentTimestamp(), message); return
-	 * ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse); }
-	 */
+//	@ExceptionHandler(MaxUploadSizeExceededException.class)
+//	public ResponseEntity<ApiResponse> handleMaxSizeException(MaxUploadSizeExceededException exc) {
+//	    return ResponseEntity
+//	            .status(HttpStatus.PAYLOAD_TOO_LARGE)
+//	            .body(ResponseUtils.buildErrorResponse("File too large. Maximum size is 10MB.", 413, "Upload failed"));
+//	}
 
 	protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
 			HttpHeaders headers, HttpStatus status, WebRequest request) {
@@ -131,6 +118,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
 	}
 
+	
 	/**
 	 * Handle general exceptions that are not caught by specific handlers
 	 */
@@ -144,4 +132,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		ApiResponse apiResponse = new ApiResponse(generateCorrelationID(), getCurrentTimestamp(), error);
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
 	}
+	
+	@ExceptionHandler(DuplicatePaymentException.class)
+	public ResponseEntity<ApiResponse<?>> handleDuplicate(DuplicatePaymentException ex) {
+	    ApiResponse<?> response = ResponseUtils.buildPlainError(ex.getMessage(), 409);
+	    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
+	}
+
 }
+	
+
+

@@ -8,8 +8,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -20,7 +18,6 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newbusiness.one4all.util.ApiResponse;
-import com.newbusiness.one4all.util.GlobalConstants;
 import com.newbusiness.one4all.util.ResponseUtils;
 
 import java.io.IOException;
@@ -46,23 +43,24 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
+		HttpServletRequest wrappedRequest = new ContentCachingRequestWrapper(request); // <-- wrapper
 		logger.info("➡️ HTTP Method: {}", request.getMethod());
 		logger.info("➡️ URI: {}", request.getRequestURI());
 		logger.info("➡️ Headers:");
-		Collections.list(request.getHeaderNames()).forEach(h -> logger.info("     {}: {}", h, request.getHeader(h)));
+		Collections.list(request.getHeaderNames()).forEach(h -> logger.info("     {}: {}", h, wrappedRequest.getHeader(h)));
 
-		String requestUri = request.getRequestURI();
+		String requestUri = wrappedRequest.getRequestURI();
 		logger.info("Processing request: {}", requestUri);
-
+		
 		if (requestUri.equals("/api/login") || requestUri.equals("/api/register")
 				||requestUri.equals("/api/admin/login") || requestUri.equals("/api/admin/register")
 				 || requestUri.equals("/api/admin/reset-password-request") || requestUri.equals("/api/reset-password-request")) {
-			filterChain.doFilter(request, response);
+			filterChain.doFilter(wrappedRequest, response);
 			return;
 		}
 
-		String clientToken = request.getHeader("Client-Authorization");
-		String userToken = request.getHeader("Authorization");
+		String clientToken = wrappedRequest.getHeader("Client-Authorization");
+		String userToken = wrappedRequest.getHeader("Authorization");
 
 		if (!isValidClientToken(clientToken) || !isValidUserToken(userToken)) {
 			sendErrorResponse(response, "Invalid or missing authentication tokens",
@@ -72,7 +70,7 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 
 		Jwt jwt = jwtDecoder.decode(userToken.replace("Bearer ", ""));
 		String tokenMemberId = jwt.getClaim("ofaMemberId");
-		String requestMemberId = extractMemberId(request);
+		String requestMemberId = extractMemberId(wrappedRequest);
 
 		if (requestMemberId != null && !requestMemberId.equals(tokenMemberId)) {
 			sendErrorResponse(response, "Member ID in token does not match request", HttpServletResponse.SC_FORBIDDEN);
@@ -139,10 +137,15 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 			return memberId;
 
 		// Check Request Body (for POST, PUT, etc.)
-		if ("POST".equalsIgnoreCase(request.getMethod()) || "PUT".equalsIgnoreCase(request.getMethod())) {
-			Map<String, Object> body = new ObjectMapper().readValue(request.getInputStream(), Map.class);
-			return (String) body.get("ofaMemberId");
-		}
+		// Try body safely from cached request
+	    if (request instanceof ContentCachingRequestWrapper) {
+	        ContentCachingRequestWrapper wrapper = (ContentCachingRequestWrapper) request;
+	        byte[] buf = wrapper.getContentAsByteArray();
+	        if (buf.length > 0) {
+	            Map<String, Object> body = objectMapper.readValue(buf, Map.class);
+	            return (String) body.get("ofaMemberId");
+	        }
+	    }
 
 		// Extract from Path
 		return extractMemberIdFromPath(request);

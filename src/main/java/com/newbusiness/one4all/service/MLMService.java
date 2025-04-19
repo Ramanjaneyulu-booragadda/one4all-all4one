@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,28 +11,14 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
-import com.newbusiness.one4all.model.PaymentDetails;
-import com.newbusiness.one4all.model.UplinerPaymentDetails;
-import com.newbusiness.one4all.repository.PaymentDetailRepository;
-import com.newbusiness.one4all.repository.UplinerPaymentDetailsRepository;
-import com.newbusiness.one4all.strategy.PaymentDistributionStrategy;
-import com.newbusiness.one4all.util.PaymentStatus;
 
 @Service
 @Transactional
-public class MLMService implements PaymentDistributionStrategy {
+public class MLMService {
 
 	@Autowired
 	private Environment environment;
 
-	@Autowired
-	private UplinerPaymentDetailsRepository uplinerPaymentDetailsRepository;
-	@Autowired
-	private PaymentDetailRepository paymentDetailRepository;
-
-	@Autowired
-	private ReferralService referralService;
 
 	/**
 	 * Retrieve the referral bonus amount from properties.
@@ -56,70 +41,7 @@ public class MLMService implements PaymentDistributionStrategy {
 		return payoutScheme;
 	}
 
-	@Transactional
-	public void distributePayment(PaymentDetails paymentDetails, List<UplinerWithMemberDetailsDTO> upliners) {
-		BigDecimal totalReceivedAmount = paymentDetails.getOfaGivenAmount();
-		Map<Integer, BigDecimal> phaseScheme = getPhaseBasedPayoutScheme();
-		// Step 1: Fetch existing paid levels
-		List<Integer> paidLevels = uplinerPaymentDetailsRepository
-				.findPaidLevelsByConsumerNo(paymentDetails.getOfaConsumerNo());
-		
-		
-		// Step 2: Start distributing from the specified stage (increment level dynamically)
-	    int currentLevel = paymentDetails.getOfaStageNo();
-	    int maxLevel = phaseScheme.size(); // Get the total number of levels in phaseScheme
-	    
-	    while (currentLevel <= maxLevel) {
-	        BigDecimal threshold = phaseScheme.getOrDefault(currentLevel, BigDecimal.ZERO);
-	        BigDecimal payout = getPayoutForPhase(currentLevel);
 
-
-			if (totalReceivedAmount.compareTo(threshold) < 0) {
-				break; // Stop if funds are insufficient
-			}
-			if (paidLevels.contains(currentLevel)) {
-				currentLevel++;
-				continue; // Skip already paid levels
-			}
-			// Validate if upliner exists for this level
-			if (upliners.size() < currentLevel) {
-				throw new IllegalArgumentException(String.format("No upliner available at level %d", currentLevel));
-			}
-
-			UplinerWithMemberDetailsDTO upliner = upliners.get(currentLevel - 1);
-
-			// Proceed with payment
-			UplinerPaymentDetails uplinerPayment = new UplinerPaymentDetails();
-			uplinerPayment.setTransactionRefId(paymentDetails.getTransactionRefId());
-			uplinerPayment.setUplinerId(upliner.getUplinerDetails().getOfaMemberId());
-			uplinerPayment.setUplinerName(upliner.getUplinerDetails().getOfaFullName());
-			uplinerPayment.setUplinerLevel(currentLevel);
-			uplinerPayment.setReceivedAmount(payout);
-			uplinerPayment.setStatus(PaymentStatus.RECEIVED);
-			uplinerPayment.setCreatedAt(new Date());
-			uplinerPayment.setUpdatedAt(new Date());
-			uplinerPayment.setUplinerMobile(upliner.getUplinerDetails().getOfaMobileNo());
-			uplinerPaymentDetailsRepository.save(uplinerPayment);
-			// Get all payment records for the given consumer, ordered by the latest date
-			List<PaymentDetails> paymentRecords = paymentDetailRepository
-			        .findAllByConsumerNoOrderByCreatedAtDesc(upliner.getUplinerDetails().getOfaMemberId());
-
-			// Iterate through the list and update only the latest payment
-			if (!paymentRecords.isEmpty()) {
-			    PaymentDetails latestPaymentRecord = paymentRecords.get(0); // Get the first record (latest)
-			    latestPaymentRecord.setOfaTotalAmount(payout.add(latestPaymentRecord.getOfaTotalAmount()));
-			    latestPaymentRecord.setOfaUpdatedAt(new Date());
-			    paymentDetailRepository.save(latestPaymentRecord);
-			}
-
-
-			totalReceivedAmount = totalReceivedAmount.subtract(payout);
-			// Increment level for the next iteration
-	        currentLevel++;
-		}
-
-		paymentDetails.setOfaTotalAmount(totalReceivedAmount);
-	}
 
 	private Map<Integer, BigDecimal> getPhaseBasedPayoutScheme() {
 		Map<Integer, BigDecimal> phaseScheme = new LinkedHashMap<>();
@@ -137,7 +59,7 @@ public class MLMService implements PaymentDistributionStrategy {
 		return phaseScheme;
 	}
 
-	private BigDecimal getPayoutForPhase(int level) {
+	public BigDecimal getPayoutForPhase(int level) {
 		switch (level) {
 		case 1:
 			return new BigDecimal(2000);
@@ -163,4 +85,6 @@ public class MLMService implements PaymentDistributionStrategy {
 			return BigDecimal.ZERO;
 		}
 	}
+
+	
 }

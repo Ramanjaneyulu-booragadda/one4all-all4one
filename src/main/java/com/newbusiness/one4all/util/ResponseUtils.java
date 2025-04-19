@@ -2,17 +2,15 @@ package com.newbusiness.one4all.util;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-import com.newbusiness.one4all.dto.PaymentDetailDTO;
-import com.newbusiness.one4all.model.PaymentDetails;
 
 import de.huxhorn.sulky.ulid.ULID;
-
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 public class ResponseUtils {
 
     public static String generateCorrelationID() {
@@ -90,15 +88,15 @@ public class ResponseUtils {
         return idPrefix + randomNumber;
     }
 
-    public static PaymentDetailDTO convertToDTO(PaymentDetails paymentDetails) {
-        PaymentDetailDTO dto = new PaymentDetailDTO();
-        dto.setOfaConsumerName(paymentDetails.getOfaConsumerName());
-        dto.setOfaConsumerNo(paymentDetails.getOfaConsumerNo());
-        dto.setOfaGivenAmount(paymentDetails.getOfaGivenAmount());
-        dto.setOfaPaymentStatus(paymentDetails.getOfaPaymentStatus().name());
-        dto.setOfaMobile(paymentDetails.getOfaMobile());
-        return dto;
-    }
+//    public static PaymentDetailDTO convertToDTO(PaymentDetails paymentDetails) {
+//        PaymentDetailDTO dto = new PaymentDetailDTO();
+//        dto.setOfaConsumerName(paymentDetails.getOfaConsumerName());
+//        dto.setOfaConsumerNo(paymentDetails.getOfaConsumerNo());
+//        dto.setOfaGivenAmount(paymentDetails.getOfaGivenAmount());
+//        dto.setOfaPaymentStatus(paymentDetails.getOfaPaymentStatus().name());
+//        dto.setOfaMobile(paymentDetails.getOfaMobile());
+//        return dto;
+//    }
 
     public static Set<String> getCurrentUserRoles() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -116,4 +114,44 @@ public class ResponseUtils {
         Set<String> userRoles = getCurrentUserRoles();
         return Arrays.stream(roles).anyMatch(userRoles::contains);
     }
+    public static ApiResponse buildSuccessResponse(Object data) {
+        return buildSuccessResponse(data, "Success");
+    }
+    
+
+    public static ResponseEntity<ApiResponse> buildUnauthorizedResponse(String message) {
+        Map<String, Object> error = Map.of(
+            "status", "UNAUTHORIZED",
+            "statusMessage", message
+        );
+        ApiResponse response = new ApiResponse(
+            generateCorrelationID(),
+            getCurrentTimestamp(),
+            "Error",
+            List.of(error),
+            Map.of("code", 401, "description", message)
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+    }
+ // ✅ Simple success with plain messageText
+    public static ApiResponse buildPlainSuccess(String messageText) {
+        ApiResponse response = new ApiResponse();
+        response.setTransactionID(generateCorrelationID());
+        response.setTransactionDate(getCurrentTimestamp());
+        response.setStatus("Success");
+        response.setMessageText(messageText);
+        return response;
+    }
+
+    // ✅ Simple error with plain messageText
+    public static ApiResponse buildPlainError(String messageText, int statusCode) {
+        ApiResponse response = new ApiResponse();
+        response.setTransactionID(generateCorrelationID());
+        response.setTransactionDate(getCurrentTimestamp());
+        response.setStatus("Error");
+        response.setMessageText(messageText);
+        response.setErrorDetails(Map.of("code", statusCode));
+        return response;
+    }
+
 }

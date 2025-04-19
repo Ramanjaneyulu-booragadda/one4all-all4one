@@ -16,10 +16,8 @@ import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.ReferrerDetails;
 import com.newbusiness.one4all.model.UplinerDetails;
-import com.newbusiness.one4all.model.UplinerPaymentDetails;
 import com.newbusiness.one4all.repository.ReferrerDetailsRepository;
 import com.newbusiness.one4all.repository.UplinerDetailsRepository;
-import com.newbusiness.one4all.repository.UplinerPaymentDetailsRepository;
 import com.newbusiness.one4all.repository.UserRepository;
 
 @Service
@@ -34,8 +32,6 @@ public class ReferralService {
 
     @Autowired
     private UplinerDetailsRepository uplinerDetailsRepository;
-    @Autowired
-    private UplinerPaymentDetailsRepository uplinerPaymentDetailsRepository;
 
     public ReferrerDetails addReferer(String memberId, String referrerId, int referralLevel) {
         // ✅ 1. Check if the member exists in ofa_user_reg_details
@@ -202,15 +198,15 @@ public class ReferralService {
         return immediateMembers.stream()
             .anyMatch(referral -> referral.getMemberId().equals(memberId));
     }
-    public boolean isDirectChildFromUplinerDetails(String consumerNo) {
-        // Fetch the upliner details for the given consumerNo
-        List<UplinerPaymentDetails> uplinerDetails = uplinerPaymentDetailsRepository
-            .findByUplinerId(consumerNo);
-
-        // Check if the upliner details exist and the level is 1 (Direct Child)
-        return uplinerDetails.stream()
-            .anyMatch(upliner -> upliner.getUplinerLevel() == 1);
-    }
+//    public boolean isDirectChildFromUplinerDetails(String consumerNo) {
+//        // Fetch the upliner details for the given consumerNo
+//        List<UplinerPaymentDetails> uplinerDetails = uplinerPaymentDetailsRepository
+//            .findByUplinerId(consumerNo);
+//
+//        // Check if the upliner details exist and the level is 1 (Direct Child)
+//        return uplinerDetails.stream()
+//            .anyMatch(upliner -> upliner.getUplinerLevel() == 1);
+//    }
 
     private BigDecimal getPayoutForPhase(int level) {
 		switch (level) {

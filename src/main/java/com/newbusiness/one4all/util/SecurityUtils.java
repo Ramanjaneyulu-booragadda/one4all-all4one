@@ -5,6 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -48,6 +50,13 @@ public class SecurityUtils {
 
         Set<String> rolesWithPermission = permissionMappings.getOrDefault(requiredPermission, Collections.emptySet());
         return userRoles.stream().anyMatch(rolesWithPermission::contains);
+    }
+    public static String getLoggedInMemberId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof Jwt jwt) {
+            return jwt.getClaimAsString("ofaMemberId"); // adjust the claim key if named differently
+        }
+        throw new RuntimeException("Unable to extract ofaMemberId from security context");
     }
 }
 
