@@ -13,7 +13,9 @@ public class HelpDashboardService {
     private HelpSubmissionRepository helpSubmissionRepository; // or HelpDashboardRepository
 
     public HelpDashboardProjection getHelpSummary(String memberId) {
-        return helpSubmissionRepository.getHelpSummary(memberId);
+    	 HelpDashboardProjection summary = helpSubmissionRepository.getHelpSummary(memberId);
+    	    System.out.println("Fetched Summary for " + memberId + ": " + summary);
+    	    return summary;
     }
 }
 

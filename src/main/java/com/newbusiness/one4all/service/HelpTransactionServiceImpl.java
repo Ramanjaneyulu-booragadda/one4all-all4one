@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 
 import com.newbusiness.one4all.dto.HelpSubmissionDTO;
 import com.newbusiness.one4all.dto.HelpVerificationDTO;
+import com.newbusiness.one4all.dto.ReceiveHelpPageResponse;
+import com.newbusiness.one4all.dto.ReceivedHelpDetailDTO;
+import com.newbusiness.one4all.dto.ReceivedHelpSummaryDTO;
 import com.newbusiness.one4all.exception.DuplicatePaymentException;
 import com.newbusiness.one4all.model.HelpSubmission;
 import com.newbusiness.one4all.model.HelpSubmissionAuditLog;
@@ -71,8 +74,7 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
         submission.setReceiverMobile(dto.getReceiverMobile());
         submission.setProofUrl(fileUrl);
         submission.setSubmissionStatus(SubmissionStatus.SUBMITTED);
-        submission.setCreatedAt(new Date());
-        submission.setUpdatedAt(new Date());
+        submission.setTransactionDate(LocalDateTime.now());
         submission.setSubmissionReferenceId(UUID.randomUUID().toString());
 
         // 4️⃣ Save and audit
@@ -91,7 +93,6 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
 
         payment.setSubmissionStatus(SubmissionStatus.valueOf(dto.getStatus()));
         payment.setComments(dto.getComments());
-        payment.setUpdatedDate(LocalDateTime.now());
         payment.setVerifiedBy(payment.getReceiverMemberId());
         payment.setVerificationDate(LocalDateTime.now());
 
@@ -100,11 +101,12 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
         return updated;
     }
 
-    @Override
-    public List<HelpSubmission> getReceivedHelps(String memberId) {
-        return helpSubmissionRepository.findByReceiverMemberId(memberId);
+    
+    public ReceiveHelpPageResponse getReceivedHelps(String memberId) {
+        List<ReceivedHelpDetailDTO> records = helpSubmissionRepository.getReceivedHelpDetails(memberId);
+        ReceivedHelpSummaryDTO summary = helpSubmissionRepository.getReceivedHelpSummary(memberId);
+        return new ReceiveHelpPageResponse(records, summary);
     }
-
     @Override
     public List<HelpSubmission> getGivenHelps(String memberId) {
         return helpSubmissionRepository.findBySenderMemberId(memberId);

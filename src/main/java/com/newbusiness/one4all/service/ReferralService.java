@@ -3,6 +3,7 @@ package com.newbusiness.one4all.service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -13,12 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 import com.newbusiness.one4all.dto.DownlinerHierarchyDTO;
 import com.newbusiness.one4all.dto.DownlinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
+import com.newbusiness.one4all.model.HelpSubmission;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.ReferrerDetails;
 import com.newbusiness.one4all.model.UplinerDetails;
+import com.newbusiness.one4all.repository.HelpSubmissionRepository;
 import com.newbusiness.one4all.repository.ReferrerDetailsRepository;
 import com.newbusiness.one4all.repository.UplinerDetailsRepository;
 import com.newbusiness.one4all.repository.UserRepository;
+import com.newbusiness.one4all.util.SubmissionStatus;
 
 @Service
 @Transactional(rollbackFor = Exception.class)
@@ -32,6 +36,8 @@ public class ReferralService {
 
     @Autowired
     private UplinerDetailsRepository uplinerDetailsRepository;
+    @Autowired
+	private HelpSubmissionRepository helpSubmissionRepository;
 
     public ReferrerDetails addReferer(String memberId, String referrerId, int referralLevel) {
         // ✅ 1. Check if the member exists in ofa_user_reg_details
@@ -118,38 +124,50 @@ public class ReferralService {
         }).collect(Collectors.toList());
     }
     public List<UplinerWithMemberDetailsDTO> getUpliners(String memberId) {
-    	// Fetch all upliner details for the given member ID
-        List<UplinerDetails> uplinerDetailsList = uplinerDetailsRepository.findByMemberId(memberId);
+    // 1. Fetch all upliner details for the given member ID
+    List<UplinerDetails> uplinerDetailsList = uplinerDetailsRepository.findByMemberId(memberId);
 
-        // Map each UplinerDetails to UplinerWithMemberDetailsDTO
-        return uplinerDetailsList.stream().map(uplinerDetails -> {
-            // Fetch the full member details for the uplinerId
-            Optional<Member> uplinerMemberOpt = memberRepository.findByOfaMemberId(uplinerDetails.getUplinerId());
-            // Fetch the full member details for the current member
-            Optional<Member> currentMemberOpt = memberRepository.findByOfaMemberId(uplinerDetails.getMemberId());
+    // 2. Bulk fetch help submissions where this member is the sender
+    List<HelpSubmission> helpSubmissions = helpSubmissionRepository.findAllBySenderMemberId(memberId);
 
-            // Build the DTO
-            UplinerWithMemberDetailsDTO detailsDTO=new UplinerWithMemberDetailsDTO();
-            detailsDTO.setId(uplinerDetails.getId());
-            detailsDTO.setMemberId(uplinerDetails.getMemberId());
-            detailsDTO.setUplinerLevel(uplinerDetails.getUplinerLevel());
-            detailsDTO.setConsumerMobile(currentMemberOpt.get().getOfaMobileNo());
-            //detailsDTO.setUplinerDetails(uplinerMemberOpt.orElse(null) );
-            detailsDTO.setLevelAmount(getPayoutForPhase(uplinerDetails.getUplinerLevel()));
-            detailsDTO.setUplinerName(uplinerMemberOpt.get().getOfaFullName());
-            detailsDTO.setUplinerMobileNo(uplinerMemberOpt.get().getOfaMobileNo());
-            detailsDTO.setUplinerMemberId(uplinerMemberOpt.get().getOfaMemberId());
-            /*
-			 * return new UplinerWithMemberDetailsDTO( uplinerDetails.getId(),
-			 * uplinerDetails.getMemberId(), uplinerDetails.getUplinerLevel(),
-			 * currentMemberOpt.get().getOfaMobileNo(), uplinerMemberOpt.orElse(null) ,//
-			 * Add upliner member details, or null if not found
-			 * getPayoutForPhase(uplinerDetails.getUplinerLevel()) );
-			 */
-            return detailsDTO;
-        }).collect(Collectors.toList());
-    }
+    // 3. Convert help submissions into a lookup map with key = "receiverId_level"
+    Map<String, HelpSubmission> helpMap = helpSubmissions.stream()
+        .collect(Collectors.toMap(
+            hs -> hs.getReceiverMemberId() + "_" + hs.getUplinerLevel(),
+            hs -> hs
+        ));
 
+    // 4. Loop through upliner details and enrich DTOs
+    return uplinerDetailsList.stream().map(uplinerDetails -> {
+        Optional<Member> uplinerMemberOpt = memberRepository.findByOfaMemberId(uplinerDetails.getUplinerId());
+        Optional<Member> currentMemberOpt = memberRepository.findByOfaMemberId(uplinerDetails.getMemberId());
+
+        UplinerWithMemberDetailsDTO detailsDTO = new UplinerWithMemberDetailsDTO();
+        detailsDTO.setId(uplinerDetails.getId());
+        detailsDTO.setMemberId(uplinerDetails.getMemberId());
+        detailsDTO.setUplinerLevel(uplinerDetails.getUplinerLevel());
+        detailsDTO.setConsumerMobile(currentMemberOpt.map(Member::getOfaMobileNo).orElse(null));
+        detailsDTO.setLevelAmount(getPayoutForPhase(uplinerDetails.getUplinerLevel()));
+        detailsDTO.setUplinerName(uplinerMemberOpt.map(Member::getOfaFullName).orElse(null));
+        detailsDTO.setUplinerMobileNo(uplinerMemberOpt.map(Member::getOfaMobileNo).orElse(null));
+        detailsDTO.setUplinerMemberId(uplinerMemberOpt.map(Member::getOfaMemberId).orElse(null));
+
+        // Check in the pre-fetched help map
+        String key = uplinerDetails.getUplinerId() + "_" + uplinerDetails.getUplinerLevel();
+        HelpSubmission matchedSubmission = helpMap.get(key);
+
+        if (matchedSubmission != null) {
+            detailsDTO.setStatus(matchedSubmission.getSubmissionStatus());
+            detailsDTO.setProofUrl(matchedSubmission.getProofUrl());
+            detailsDTO.setTransactionReferenceId(matchedSubmission.getSubmissionReferenceId());
+        } else {
+            detailsDTO.setStatus(SubmissionStatus.UNPAID);
+        }
+
+        return detailsDTO;
+    }).collect(Collectors.toList());
+}
+    
     public DownlinerHierarchyDTO getDownlinerHierarchy(String memberId) {
         // Fetch member details for the current member
         Optional<Member> memberOpt = memberRepository.findByOfaMemberId(memberId);

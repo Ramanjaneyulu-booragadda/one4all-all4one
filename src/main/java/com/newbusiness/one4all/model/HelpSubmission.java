@@ -52,8 +52,6 @@ public class HelpSubmission {
     @Column(name = "transaction_date")
     private LocalDateTime transactionDate;
 
-    @Column(name = "updated_date")
-    private LocalDateTime updatedDate;
 
     @Column(name = "submission_reference_id")
     private String submissionReferenceId;
@@ -67,9 +65,4 @@ public class HelpSubmission {
     @Column(name = "receiver_mobile")
     private String receiverMobile;
 
-    @Column(name = "created_at")
-    private Date createdAt;
-
-    @Column(name = "updated_at")
-    private Date updatedAt;
 }

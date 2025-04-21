@@ -4,6 +4,7 @@ package com.newbusiness.one4all.service;
 
 import com.newbusiness.one4all.dto.HelpSubmissionDTO;
 import com.newbusiness.one4all.dto.HelpVerificationDTO;
+import com.newbusiness.one4all.dto.ReceiveHelpPageResponse;
 import com.newbusiness.one4all.model.HelpSubmission;
 
 import java.util.List;
@@ -13,7 +14,7 @@ public interface HelpTransactionService {
 
 	HelpSubmission verifyHelpTransaction(HelpVerificationDTO dto);
 
-    List<HelpSubmission> getReceivedHelps(String memberId);
+    ReceiveHelpPageResponse getReceivedHelps(String memberId);
 
     List<HelpSubmission> getGivenHelps(String memberId);
 

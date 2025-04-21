@@ -12,5 +12,9 @@ public interface HelpDashboardProjection {
     BigDecimal getTotalAmountReceivedAck();
     BigDecimal getAvailableBalance();
     Date getLastReceivedDate();
+    Integer getPendingHelpCount();
+    Integer getCompletedHelpCount();
+    BigDecimal getThisMonthTotal();
+
 }
 

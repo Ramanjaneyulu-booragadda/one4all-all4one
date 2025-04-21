@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import com.newbusiness.one4all.dto.HelpSubmissionDTO;
 import com.newbusiness.one4all.dto.HelpVerificationDTO;
+import com.newbusiness.one4all.dto.ReceiveHelpPageResponse;
 import com.newbusiness.one4all.model.HelpSubmission;
 import com.newbusiness.one4all.model.HelpSubmissionAuditLog;
 import com.newbusiness.one4all.repository.HelpSubmissionAuditLogRepository;
@@ -54,15 +55,15 @@ public class HelpTransactionController {
         return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/received/{memberId}")
+    @GetMapping("/receive-help/{memberId}")
     public ResponseEntity<ApiResponse> getReceivedHelp(@PathVariable String memberId) {
         String loggedInUser = SecurityUtils.getLoggedInMemberId();
         if (!loggedInUser.equals(memberId)) {
             ApiResponse error = ResponseUtils.buildSuccessResponse(Map.of("error", "Access denied for another user's received help"), "Unauthorized");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
-        List<HelpSubmission> list = helpTransactionService.getReceivedHelps(memberId);
-        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(list, "Received helps retrieved"));
+        ReceiveHelpPageResponse helpPageResponse = helpTransactionService.getReceivedHelps(memberId);
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(helpPageResponse, "Received helps retrieved"));
     }
 
     @GetMapping("/given/{memberId}")

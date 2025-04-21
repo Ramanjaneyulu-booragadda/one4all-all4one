@@ -3,6 +3,7 @@ package com.newbusiness.one4all.dto;
 import java.math.BigDecimal;
 
 import com.newbusiness.one4all.model.Member;
+import com.newbusiness.one4all.util.SubmissionStatus;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -23,4 +24,8 @@ public class UplinerWithMemberDetailsDTO {
     private String uplinerName;
     private String uplinerMemberId;
     private String uplinerMobileNo;
+    private SubmissionStatus status;
+    private String proofUrl;
+    private String transactionReferenceId;
+
 }
