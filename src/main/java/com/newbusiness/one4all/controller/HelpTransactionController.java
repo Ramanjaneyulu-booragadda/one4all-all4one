@@ -12,8 +12,10 @@ import com.newbusiness.one4all.dto.ReceiveHelpPageResponse;
 import com.newbusiness.one4all.model.HelpSubmission;
 import com.newbusiness.one4all.model.HelpSubmissionAuditLog;
 import com.newbusiness.one4all.repository.HelpSubmissionAuditLogRepository;
+import com.newbusiness.one4all.security.RoleCheck;
 import com.newbusiness.one4all.service.HelpTransactionService;
 import com.newbusiness.one4all.util.ApiResponse;
+import com.newbusiness.one4all.util.GlobalConstants;
 import com.newbusiness.one4all.util.ResponseUtils;
 import com.newbusiness.one4all.util.SecurityUtils;
 import org.springframework.http.HttpStatus;
@@ -29,7 +31,7 @@ public class HelpTransactionController {
 
     private final HelpTransactionService helpTransactionService;
     private final HelpSubmissionAuditLogRepository auditLogRepository;
-
+    @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @PostMapping(value="/give",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse> giveHelp(@ModelAttribute HelpSubmissionDTO dto) throws Exception {
         String loggedInUser = SecurityUtils.getLoggedInMemberId();
@@ -41,7 +43,7 @@ public class HelpTransactionController {
         ApiResponse response = ResponseUtils.buildSuccessResponse(result, "Help submitted successfully");
         return ResponseEntity.ok(response);
     }
-
+    @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @PostMapping("/verify")
     public ResponseEntity<ApiResponse> verifyHelp(@RequestBody HelpVerificationDTO dto) {
         String loggedInUser = SecurityUtils.getLoggedInMemberId();
@@ -54,7 +56,7 @@ public class HelpTransactionController {
         ApiResponse response = ResponseUtils.buildSuccessResponse(result, "Help verified successfully");
         return ResponseEntity.ok(response);
     }
-
+    @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @GetMapping("/receive-help/{memberId}")
     public ResponseEntity<ApiResponse> getReceivedHelp(@PathVariable String memberId) {
         String loggedInUser = SecurityUtils.getLoggedInMemberId();
@@ -65,7 +67,7 @@ public class HelpTransactionController {
         ReceiveHelpPageResponse helpPageResponse = helpTransactionService.getReceivedHelps(memberId);
         return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(helpPageResponse, "Received helps retrieved"));
     }
-
+    @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @GetMapping("/given/{memberId}")
     public ResponseEntity<ApiResponse> getGivenHelp(@PathVariable String memberId) {
         String loggedInUser = SecurityUtils.getLoggedInMemberId();

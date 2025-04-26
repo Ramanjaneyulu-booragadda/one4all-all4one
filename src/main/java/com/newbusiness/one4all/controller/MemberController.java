@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 import com.newbusiness.one4all.dto.LoginRequest;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.Role;
+import com.newbusiness.one4all.security.RoleCheck;
 import com.newbusiness.one4all.service.MemberService;
 import com.newbusiness.one4all.service.PasswordResetService;
 import com.newbusiness.one4all.util.*;
@@ -153,6 +154,7 @@ public class MemberController {
 	}
 
 	// ✅ Admin Login
+	
 	@PostMapping("/admin/login")
 	public ResponseEntity<?> adminLogin(@RequestBody LoginRequest loginRequest) {
 		Optional<Member> validUser = userService.validateLogin(loginRequest);

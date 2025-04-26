@@ -17,7 +17,12 @@ public static final String DUPLICATE_PAYMENT_RECORD_FOUND="Record already exists
 public static final String REFFERAR_CREATION_SUCCESS="successfully added refferar .";
 public static final String DUPLICATE_REFFERAR_RECORD_FOUND="Record already exists with the provided member ID:";
 public static final String CLIENT_ID="one4all";
-
+public static final String ROLE_ADMIN_RW = "ONE4ALL_ADMIN_RW";
+public static final String ROLE_ADMIN_W = "ONE4ALL_ADMIN_W";
+public static final String ROLE_ADMIN_RO = "ONE4ALL_ADMIN_RO";
+public static final String ROLE_USER_RO = "ONE4ALL_USER_RO";
+public static final String ROLE_USER_RW = "ONE4ALL_USER_RW";
+public static final String ROLE_USER_W = "ONE4ALL_USER_W";
 public static final Map<String, String> ERROR_MESSAGES = Map.of(
         "INVALID_CLIENT_TOKEN", "Invalid or missing client token.",
         "INVALID_USER_TOKEN", "Invalid or missing user token.",

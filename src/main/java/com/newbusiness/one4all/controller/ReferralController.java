@@ -25,6 +25,7 @@ import com.newbusiness.one4all.dto.DownlinerHierarchyDTO;
 import com.newbusiness.one4all.dto.DownlinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.model.ReferrerDetails;
+import com.newbusiness.one4all.security.RoleCheck;
 import com.newbusiness.one4all.service.MemberService;
 import com.newbusiness.one4all.service.ReferralService;
 import com.newbusiness.one4all.util.ApiResponse;
@@ -41,7 +42,7 @@ public class ReferralController {
 	
 	@Autowired
 	private ReferralService referralService; 
-	
+	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW})
 	@PostMapping("/addreferer")
 	public ResponseEntity<?> addReferer(@Valid @RequestBody ReferrerDetails  referrerDetails, BindingResult result) {
 	    logger.info("Add referer request received: {}", referrerDetails);
@@ -86,6 +87,7 @@ public class ReferralController {
 	}
 	
 	 // Endpoint to get downliners
+	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @GetMapping("/{memberId}/downliners")
     public ResponseEntity<?> getDownliners(@PathVariable String memberId) {
         List<DownlinerWithMemberDetailsDTO> downliners = referralService.getDownliners(memberId);
@@ -93,12 +95,13 @@ public class ReferralController {
     }
 
     // Endpoint to get upliners
+	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @GetMapping("/{memberId}/upliners")
     public ResponseEntity<?> getUpliners(@PathVariable String memberId) {
         List<UplinerWithMemberDetailsDTO> upliners = referralService.getUpliners(memberId);
         return ResponseEntity.ok(upliners);
     }
-    
+	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW})
     @GetMapping("/{memberId}/downlinerHierarchy")
     public ResponseEntity<?> getDownlinerHierarchy(@PathVariable String memberId) {
         DownlinerHierarchyDTO hierarchy = referralService.getDownlinerHierarchy(memberId);

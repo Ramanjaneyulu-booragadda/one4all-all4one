@@ -11,8 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.newbusiness.one4all.dto.HelpDashboardProjection;
+import com.newbusiness.one4all.security.RoleCheck;
 import com.newbusiness.one4all.service.HelpDashboardService;
 import com.newbusiness.one4all.util.ApiResponse;
+import com.newbusiness.one4all.util.GlobalConstants;
 import com.newbusiness.one4all.util.ResponseUtils;
 import com.newbusiness.one4all.util.SecurityUtils;
 
@@ -22,7 +24,7 @@ public class DashboardController {
 
     @Autowired
     private HelpDashboardService helpDashboardService;
-
+    @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @GetMapping("/summary/{memberId}")
     public ResponseEntity<ApiResponse> getHelpSummary(@PathVariable String memberId) {
     	 String loggedInUser = SecurityUtils.getLoggedInMemberId();

@@ -111,7 +111,7 @@ public class Member {
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
         name = "member_roles",
-        joinColumns = @JoinColumn(name = "member_id"),
+        joinColumns = @JoinColumn(name = "ofa_id"),
         inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles;
