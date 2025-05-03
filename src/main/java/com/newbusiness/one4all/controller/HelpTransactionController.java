@@ -35,10 +35,17 @@ public class HelpTransactionController {
     @PostMapping(value="/give",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ApiResponse> giveHelp(@ModelAttribute HelpSubmissionDTO dto) throws Exception {
         String loggedInUser = SecurityUtils.getLoggedInMemberId();
+        if (SecurityUtils.isSpecialMember(loggedInUser)) {
+        	ApiResponse error = ResponseUtils.buildPlainError("Special members are not required to help their upliners.", 400);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+            
+            // Allow without upliner validation
+        } 
         if (!loggedInUser.equals(dto.getOfaMemberId())) {
             ApiResponse error = ResponseUtils.buildSuccessResponse(Map.of("error", "Invalid user token for this request"), "Unauthorized");
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
+        
         HelpSubmission result = helpTransactionService.submitHelpTransaction(dto);
         ApiResponse response = ResponseUtils.buildSuccessResponse(result, "Help submitted successfully");
         return ResponseEntity.ok(response);
@@ -76,7 +83,7 @@ public class HelpTransactionController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
         }
         List<HelpSubmission> list = helpTransactionService.getGivenHelps(memberId);
-        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(list, "Given helps retrieved"));
+        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(list, "List of helps given by  Member:"+memberId));
     }
 
     @GetMapping("/audit/{paymentId}")

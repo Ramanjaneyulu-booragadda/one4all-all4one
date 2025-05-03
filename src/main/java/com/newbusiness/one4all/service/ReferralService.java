@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.newbusiness.one4all.dto.DownlinerHelpInfoDto;
 import com.newbusiness.one4all.dto.DownlinerHierarchyDTO;
 import com.newbusiness.one4all.dto.DownlinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
@@ -24,6 +25,8 @@ import com.newbusiness.one4all.repository.UplinerDetailsRepository;
 import com.newbusiness.one4all.repository.UserRepository;
 import com.newbusiness.one4all.util.SubmissionStatus;
 
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @Service
 @Transactional(rollbackFor = Exception.class)
 public class ReferralService {
@@ -252,5 +255,45 @@ public class ReferralService {
 			return BigDecimal.ZERO;
 		}
 	}
+    
+    public List<DownlinerHelpInfoDto> getDownlinerListWithLevelAndAmount(String memberId) {
+        List<DownlinerHelpInfoDto> downlinerList = new ArrayList<>();
+        if (memberId == null || memberId.isBlank()) {
+            throw new IllegalArgumentException("Member ID cannot be null or blank");
+        }
+        buildDownlinerListRecursive(memberId, 1, downlinerList);
+        return downlinerList;
+    }
+
+    private void buildDownlinerListRecursive(String parentMemberId, int currentLevel, List<DownlinerHelpInfoDto> downlinerList) {
+        if (currentLevel > 20) {
+            return; // Maximum 20 levels as per your business rule
+        }
+
+        List<String> childMemberIds = referrerDetailsRepository.findDirectReferralMemberIds(parentMemberId);
+        if (childMemberIds == null || childMemberIds.isEmpty()) {
+            log.info("No direct referrals found for memberId: {}", parentMemberId);
+            return;
+        }
+
+        List<Member> children = memberRepository.findByOfaMemberIdIn(childMemberIds);
+        if (children == null || children.isEmpty()) {
+            log.warn("Member IDs found in referrer table but corresponding user records missing for memberId: {}", parentMemberId);
+            return;
+        }
+
+        for (Member child : children) {
+            DownlinerHelpInfoDto dto = new DownlinerHelpInfoDto(
+                    child.getOfaMemberId(),
+                    child.getOfaFullName(),
+                    currentLevel,
+                    getPayoutForPhase(currentLevel)
+            );
+            downlinerList.add(dto);
+
+            // Recursive call
+            buildDownlinerListRecursive(child.getOfaMemberId(), currentLevel + 1, downlinerList);
+        }
+    }
 }
 

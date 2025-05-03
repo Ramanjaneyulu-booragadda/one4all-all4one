@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.newbusiness.one4all.dto.DownlinerHelpInfoDto;
 import com.newbusiness.one4all.dto.DownlinerHierarchyDTO;
 import com.newbusiness.one4all.dto.DownlinerWithMemberDetailsDTO;
 import com.newbusiness.one4all.dto.UplinerWithMemberDetailsDTO;
@@ -33,7 +34,8 @@ import com.newbusiness.one4all.util.GlobalConstants;
 import com.newbusiness.one4all.util.ResponseUtils;
 
 import jakarta.validation.Valid;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @RestController
 @RequestMapping("/api")
 public class ReferralController {
@@ -107,5 +109,15 @@ public class ReferralController {
         DownlinerHierarchyDTO hierarchy = referralService.getDownlinerHierarchy(memberId);
         return ResponseEntity.ok(hierarchy);
     }
+	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
+	@GetMapping("/{memberId}/showDownlinerlistWithLevelAndAmount")
+    public ResponseEntity<ApiResponse> showDownlinerListWithLevelAndAmount(@PathVariable String memberId) {
+        log.info("Fetching downliner list with level and amount for member: {}", memberId);
 
+        // ✅ No try-catch needed. Let global exception handler manage errors.
+        ApiResponse apiResponse = ResponseUtils.buildApiResponse(
+	                Collections.singletonList(Map.of("status", "Downliner list fetched successfully", "errorCode",
+	                        HttpStatus.FOUND, "message", referralService.getDownlinerListWithLevelAndAmount(memberId))));
+        return ResponseEntity.ok(apiResponse);    
+    }
 }

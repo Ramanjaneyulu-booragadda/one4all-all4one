@@ -28,7 +28,8 @@ import com.newbusiness.one4all.util.ApiResponse;
 import com.newbusiness.one4all.util.ResponseUtils;
 
 import jakarta.persistence.PersistenceException;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @ControllerAdvice
 @Order(Ordered.HIGHEST_PRECEDENCE) // Ensure this handler is high priority if multiple handlers exist
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -41,15 +42,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	}
 
 	// You can also add specific handlers for specific types of exceptions
-	@ExceptionHandler(IllegalArgumentException.class)
-	public ResponseEntity<Object> handleIllegalArgumentException(IllegalArgumentException ex) {
-		logger.error("handleIllegalArgumentException: ", ex);
-		List<Map<String, Object>> message = Collections.singletonList(Map.of("status", "Internal Error", "errorCode",
-				HttpStatus.BAD_REQUEST, "message", Collections.singletonList(ex.getMessage())));
-
-		ApiResponse apiResponse = new ApiResponse(generateCorrelationID(), getCurrentTimestamp(), message);
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(apiResponse);
-	}
+	  @ExceptionHandler(IllegalArgumentException.class)
+	    public ResponseEntity<ApiResponse> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
+	        log.error("Bad Request: {}", ex.getMessage());
+	        return ResponseEntity.badRequest().body(
+	                ResponseUtils.buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value())
+	        );
+	    }
 
 //	@ExceptionHandler(MaxUploadSizeExceededException.class)
 //	public ResponseEntity<ApiResponse> handleMaxSizeException(MaxUploadSizeExceededException exc) {

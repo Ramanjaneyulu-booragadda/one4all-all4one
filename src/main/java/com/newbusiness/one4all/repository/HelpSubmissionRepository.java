@@ -66,7 +66,8 @@ public interface HelpSubmissionRepository extends JpaRepository<HelpSubmission, 
       request_modified_at AS requestModifiedAt,
       received_amount AS receivedAmount,
       status AS status,
-      payment_id AS paymentID 
+      payment_id AS paymentID ,
+      proof_doc as proofDoc
     FROM v_received_help_summary
     WHERE member_id = :memberId
   """, nativeQuery = true)
@@ -77,7 +78,7 @@ public interface HelpSubmissionRepository extends JpaRepository<HelpSubmission, 
     		    member_id AS memberId,
     		    approved_request_count AS approvedRequestCount,
     		    rejected_request_count AS rejectedRequestCount,
-    		    total_received_request_count AS totalReceivedRequestCount,
+    		    total_request_count AS totalRequestCount,
     		    total_received_amount AS totalReceivedAmount,
     		    this_month_received_amount AS thisMonthTotal
     		  FROM v_received_help_totals

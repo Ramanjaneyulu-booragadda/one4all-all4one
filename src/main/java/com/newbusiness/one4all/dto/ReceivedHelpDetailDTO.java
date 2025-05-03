@@ -12,5 +12,6 @@ public interface ReceivedHelpDetailDTO {
 	BigDecimal getReceivedAmount();
 	String getStatus();
 	String getPaymentID();
+	String getProofDoc();
 }
 

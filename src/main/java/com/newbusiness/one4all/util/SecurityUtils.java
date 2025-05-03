@@ -58,6 +58,9 @@ public class SecurityUtils {
         }
         throw new RuntimeException("Unable to extract ofaMemberId from security context");
     }
+    public static boolean isSpecialMember(String memberId) {
+        return memberId != null && memberId.startsWith("SPLNO4AA4O");
+    }
 }
 
 

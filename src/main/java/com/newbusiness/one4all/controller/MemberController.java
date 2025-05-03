@@ -93,7 +93,7 @@ public class MemberController {
 	@PostMapping(value = "/admin/register", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<?> registerAdmin(@RequestHeader("Client-Authorization") String clientToken,
 	                                       @Valid @RequestBody Member user,
-	                                       @RequestParam Set<String> roles,
+	                                       @RequestHeader Set<String> roles,
 	                                       BindingResult result) {
 
 		logger.info("🛡 Admin registration request: {}", user.getOfaEmail());

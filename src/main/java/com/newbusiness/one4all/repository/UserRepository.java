@@ -12,4 +12,5 @@ public interface UserRepository extends JpaRepository<Member, Long> {
 	List<Member> findALLByOfaMemberId(String ofaMemberId);
 	boolean existsByOfaMemberId(String ofaMemberId);
 	Optional<Member> findByOfaEmail(String email); 
+	List<Member> findByOfaMemberIdIn(List<String> memberIds);
 }

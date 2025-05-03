@@ -9,6 +9,6 @@ public interface ReceivedHelpSummaryDTO {
 	BigDecimal getTotalReceivedAmount();
     Integer getRejectedRequestCount();
     Integer getApprovedRequestCount();
-    Integer getTotalReceivedRequestCount();
+    Integer getTotalRequestCount();
 }
 

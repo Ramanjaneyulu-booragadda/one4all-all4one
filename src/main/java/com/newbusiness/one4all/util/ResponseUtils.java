@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.util;
 
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
@@ -12,7 +13,7 @@ import de.huxhorn.sulky.ulid.ULID;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 public class ResponseUtils {
-
+	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     public static String generateCorrelationID() {
         ULID ulid = new ULID();
         return ulid.nextULID();
@@ -88,15 +89,7 @@ public class ResponseUtils {
         return idPrefix + randomNumber;
     }
 
-//    public static PaymentDetailDTO convertToDTO(PaymentDetails paymentDetails) {
-//        PaymentDetailDTO dto = new PaymentDetailDTO();
-//        dto.setOfaConsumerName(paymentDetails.getOfaConsumerName());
-//        dto.setOfaConsumerNo(paymentDetails.getOfaConsumerNo());
-//        dto.setOfaGivenAmount(paymentDetails.getOfaGivenAmount());
-//        dto.setOfaPaymentStatus(paymentDetails.getOfaPaymentStatus().name());
-//        dto.setOfaMobile(paymentDetails.getOfaMobile());
-//        return dto;
-//    }
+
 
     public static Set<String> getCurrentUserRoles() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -117,8 +110,26 @@ public class ResponseUtils {
     public static ApiResponse buildSuccessResponse(Object data) {
         return buildSuccessResponse(data, "Success");
     }
-    
+    public static ApiResponse<Object> buildSuccessResponse(String messageText) {
+        String transactionID = generateCorrelationID();
+        String transactionDate = LocalDateTime.now().format(FORMATTER);
+        return new ApiResponse<>(transactionID, transactionDate, messageText);
+    }
+    public static ApiResponse<Object> buildSuccessResponse(List<Map<String, Object>> messages) {
+        String transactionID = generateCorrelationID();
+        String transactionDate = LocalDateTime.now().format(FORMATTER);
+        return new ApiResponse<>(transactionID, transactionDate, messages);
+    }
+    public static ApiResponse<Object> buildErrorResponse(String errorMessage, int errorCode) {
+        String transactionID = generateCorrelationID();
+        String transactionDate = LocalDateTime.now().format(FORMATTER);
 
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("code", errorCode);
+        errorDetails.put("message", errorMessage);
+
+        return new ApiResponse<>(transactionID, transactionDate, "Error", Collections.emptyList(), errorDetails);
+    }
     public static ResponseEntity<ApiResponse> buildUnauthorizedResponse(String message) {
         Map<String, Object> error = Map.of(
             "status", "UNAUTHORIZED",
