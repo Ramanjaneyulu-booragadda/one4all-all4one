@@ -23,6 +23,9 @@ public static final String ROLE_ADMIN_RO = "ONE4ALL_ADMIN_RO";
 public static final String ROLE_USER_RO = "ONE4ALL_USER_RO";
 public static final String ROLE_USER_RW = "ONE4ALL_USER_RW";
 public static final String ROLE_USER_W = "ONE4ALL_USER_W";
+public static final String PROFILEDETAILS_SUCCESS_MSZ = "Profile details fetched successfully.";
+public static final String PROFILEDETAILS_UPDTAE_SUCCESS_MSZ ="Profile updated successfully";
+public static final String UNASSIGNED_MEMBERS_DETAILS ="Mebers not in Refferer system or My team Hirarchey fetched Successfully";
 public static final Map<String, String> ERROR_MESSAGES = Map.of(
         "INVALID_CLIENT_TOKEN", "Invalid or missing client token.",
         "INVALID_USER_TOKEN", "Invalid or missing user token.",

@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -9,6 +10,9 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -16,11 +20,21 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.newbusiness.one4all.dto.LoginRequest;
+import com.newbusiness.one4all.dto.MemberProfileResponse;
+import com.newbusiness.one4all.dto.UnassignedMemberToReffererSystemDto;
+import com.newbusiness.one4all.dto.UpdateProfileRequest;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.Role;
+import com.newbusiness.one4all.model.UplinerDetails;
 import com.newbusiness.one4all.repository.RoleRepository;
+import com.newbusiness.one4all.repository.UplinerDetailsRepository;
 import com.newbusiness.one4all.repository.UserRepository;
+import com.newbusiness.one4all.util.ApiResponse;
 import com.newbusiness.one4all.util.ResponseUtils;
+import com.newbusiness.one4all.util.SecurityUtils;
+
+import jakarta.transaction.Transactional;
+import jakarta.validation.Valid;
 
 
 
@@ -40,6 +54,8 @@ public class MemberService implements UserDetailsService {
     private PasswordEncoder passwordEncoder; // Autowire the password encoder
 @Autowired
 	private RoleRepository roleRepository;
+@Autowired
+private UplinerDetailsRepository uplinerDetailsRepository;
 
     // Register a new member
     public Member registerNewMember(Member member, Set<String> roleNames) {
@@ -136,5 +152,119 @@ public class MemberService implements UserDetailsService {
         member.setRoles(roles);
         userRepository.save(member);
     }
+    public MemberProfileResponse getMemberProfile(String memberId) {
+        Member user = userRepository.findByOfaMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with memberId: " + memberId));
 
+        MemberProfileResponse response = new MemberProfileResponse();
+
+        if (user.getOfaFullName() != null) {
+            
+            response.setFullName(user.getOfaFullName() );
+            
+        }
+        
+        response.setEmail(user.getOfaEmail());
+        response.setPhoneNumber(user.getOfaMobileNo());
+        response.setAddress(user.getOfaAddress());
+        response.setConsumerNumber(user.getOfaMemberId());
+        response.setAccountCreatedDate(user.getOfaCreatedDt() != null ? user.getOfaCreatedDt().toString() : "");
+
+        // Find Parent/Upliner
+        List<UplinerDetails> upliners = uplinerDetailsRepository.findByMemberId(memberId);
+        if (upliners != null && !upliners.isEmpty()) {
+            response.setParentConsumerNumber(upliners.get(0).getUplinerId());
+        } else {
+            response.setParentConsumerNumber("");
+        }
+        response.setAccountStatus("Active"); // Hardcoding Active for now. (future: can check actual status)
+return response;
+       
+    }
+    
+    @Transactional
+    public MemberProfileResponse updateMemberProfile(String memberId, @Valid UpdateProfileRequest request) {
+
+        // Fetch existing user
+    	Member user = userRepository.findByOfaMemberId(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found with memberId: " + memberId));
+
+        // Update allowed fields
+        if (request.getFullName() != null ) {
+           
+            user.setOfaFullName(request.getFullName() );
+        }
+
+        if (request.getEmail() != null) {
+            user.setOfaEmail(request.getEmail());
+        }
+
+        if (request.getPhoneNumber() != null) {
+            user.setOfaMobileNo(request.getPhoneNumber());
+        }
+
+        if (request.getAddress() != null) {
+            user.setOfaAddress(request.getAddress());
+        }
+
+        // Save changes
+        userRepository.save(user);
+
+        // Fetch updated profile
+        MemberProfileResponse response = buildMemberProfile(user);
+
+        return response;
+    }
+
+    // Helper method to build profile response
+    private MemberProfileResponse buildMemberProfile(Member user) {
+
+        MemberProfileResponse response = new MemberProfileResponse();
+
+        if (user.getOfaFullName() != null) {
+            
+            response.setFullName(user.getOfaFullName());
+            
+        }
+
+        response.setEmail(user.getOfaEmail());
+        response.setPhoneNumber(user.getOfaMobileNo());
+        response.setAddress(user.getOfaAddress());
+        response.setConsumerNumber(user.getOfaMemberId());
+        response.setAccountCreatedDate(user.getOfaCreatedDt() != null ? user.getOfaCreatedDt().toString() : "");
+
+        // Find Parent/Upliner
+        List<UplinerDetails> upliners = uplinerDetailsRepository.findByMemberId(user.getOfaMemberId());
+        if (upliners != null && !upliners.isEmpty()) {
+            response.setParentConsumerNumber(upliners.get(0).getUplinerId());
+        } else {
+            response.setParentConsumerNumber("");
+        }
+
+        response.setAccountStatus("Active");
+
+        return response;
+    }
+    
+    public Page<UnassignedMemberToReffererSystemDto> getUnassignedMembers(Pageable pageable) {
+    	Page<Member> members = userRepository.findUnassignedMembers(pageable);
+        
+       return  members.map( member -> {
+            List<String> roleNames = member.getRoles()
+                                           .stream()
+                                           .map(Role::getRoleName)
+                                           .collect(Collectors.toList());
+            
+            return new UnassignedMemberToReffererSystemDto(
+                member.getOfaFullName(),
+                member.getOfaMobileNo(),
+                member.getOfaEmail(),
+                member.getOfaCreatedDt().toString(), // you can format it nicely if you want
+                member.getOfaCreatedBy(),
+                roleNames
+            );
+            
+        });
+        
+    }
 }

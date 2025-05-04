@@ -2,28 +2,54 @@ package com.newbusiness.one4all.controller;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.*;
-import org.springframework.security.oauth2.jwt.*;
-import org.springframework.validation.*;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.oauth2.jwt.JwtClaimsSet;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtEncoder;
+import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.newbusiness.one4all.dto.LoginRequest;
+import com.newbusiness.one4all.dto.MemberProfileResponse;
+import com.newbusiness.one4all.dto.UnassignedMemberToReffererSystemDto;
+import com.newbusiness.one4all.dto.UpdateProfileRequest;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.Role;
 import com.newbusiness.one4all.security.RoleCheck;
 import com.newbusiness.one4all.service.MemberService;
 import com.newbusiness.one4all.service.PasswordResetService;
-import com.newbusiness.one4all.util.*;
+import com.newbusiness.one4all.util.ApiResponse;
+import com.newbusiness.one4all.util.GlobalConstants;
+import com.newbusiness.one4all.util.ResponseUtils;
+import com.newbusiness.one4all.util.SecurityUtils;
 
 import jakarta.validation.Valid;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @RestController
 @RequestMapping("/api")
 public class MemberController {
@@ -216,5 +242,41 @@ public class MemberController {
 			.build();
 
 		return jwtEncoder.encode(JwtEncoderParameters.from(claims)).getTokenValue();
+	}
+	
+	@GetMapping("/member/profile/{memberId}")
+	public ResponseEntity<ApiResponse> getMemberProfile(@PathVariable String memberId) {
+		logger.info("inside member profile method");
+		MemberProfileResponse profile=userService.getMemberProfile(memberId);
+		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
+				Map.of("statusMessage", GlobalConstants.PROFILEDETAILS_SUCCESS_MSZ, "status", HttpStatus.FOUND,
+				       "member", List.of(profile))
+			)));
+	}
+	@PutMapping("/member/profile/{memberId}")
+	public ResponseEntity<ApiResponse> updateMemberProfile(
+	        @PathVariable String memberId,
+	        @Valid @RequestBody UpdateProfileRequest request) {
+		logger.info("inside updateMemberProfile method");
+		MemberProfileResponse profile=userService.updateMemberProfile(memberId, request);
+		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
+				Map.of("statusMessage", GlobalConstants.PROFILEDETAILS_UPDTAE_SUCCESS_MSZ, "status", HttpStatus.CREATED,
+				       "member", List.of(profile))
+			)));
+	}
+	 
+	@GetMapping("/unassigned-members")
+	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW})
+	public ResponseEntity<ApiResponse> getUnassignedMembers(@RequestParam(defaultValue = "0") int page,
+		    @RequestParam(defaultValue = "10") int size) {
+		Pageable pageable = PageRequest.of(page, size);
+		Page<UnassignedMemberToReffererSystemDto> unassignedMembers = userService.getUnassignedMembers(pageable);
+	    return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
+				Map.of("statusMessage", GlobalConstants.UNASSIGNED_MEMBERS_DETAILS, "status", HttpStatus.FOUND,
+				       "member", unassignedMembers.getContent(),"UnassignedMemberCount",unassignedMembers.getTotalElements(),"currentPage", unassignedMembers.getNumber(),
+				       "totalPages", unassignedMembers.getTotalPages())
+			)));
+	    
+	    
 	}
 }
