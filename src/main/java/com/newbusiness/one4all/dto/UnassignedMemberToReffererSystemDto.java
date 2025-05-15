@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UnassignedMemberToReffererSystemDto {
+	private String memberId;
 	private String ofaFullName;
     private String ofaMobileNo;
     private String ofaEmail;

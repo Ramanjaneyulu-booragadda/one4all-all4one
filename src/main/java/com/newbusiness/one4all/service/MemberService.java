@@ -256,6 +256,7 @@ return response;
                                            .collect(Collectors.toList());
             
             return new UnassignedMemberToReffererSystemDto(
+            	member.getOfaMemberId(),	
                 member.getOfaFullName(),
                 member.getOfaMobileNo(),
                 member.getOfaEmail(),
