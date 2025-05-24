@@ -39,8 +39,8 @@ public class HelpSubmission {
     @Column(name = "submitted_amount", nullable = false)
     private BigDecimal submittedAmount;
 
-    @Column(name = "proof_url")
-    private String proofUrl;
+    @Column(name = "proof")
+    private String proof;
 
     @Column(name = "comments", columnDefinition = "TEXT")
     private String comments;

@@ -67,7 +67,8 @@ public interface HelpSubmissionRepository extends JpaRepository<HelpSubmission, 
       received_amount AS receivedAmount,
       status AS status,
       payment_id AS paymentID ,
-      proof_doc as proofDoc
+      proof_doc as proofDoc,
+      received_from_name AS receivedFromName 
     FROM v_received_help_summary
     WHERE member_id = :memberId
   """, nativeQuery = true)

@@ -161,7 +161,7 @@ public class ReferralService {
 
         if (matchedSubmission != null) {
             detailsDTO.setStatus(matchedSubmission.getSubmissionStatus());
-            detailsDTO.setProofUrl(matchedSubmission.getProofUrl());
+            detailsDTO.setProof(matchedSubmission.getProof());
             detailsDTO.setTransactionReferenceId(matchedSubmission.getSubmissionReferenceId());
         } else {
             detailsDTO.setStatus(SubmissionStatus.UNPAID);

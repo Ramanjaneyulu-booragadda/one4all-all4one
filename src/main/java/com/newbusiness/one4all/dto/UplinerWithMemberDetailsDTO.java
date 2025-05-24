@@ -25,7 +25,7 @@ public class UplinerWithMemberDetailsDTO {
     private String uplinerMemberId;
     private String uplinerMobileNo;
     private SubmissionStatus status;
-    private String proofUrl;
+    private String proof;
     private String transactionReferenceId;
 
 }

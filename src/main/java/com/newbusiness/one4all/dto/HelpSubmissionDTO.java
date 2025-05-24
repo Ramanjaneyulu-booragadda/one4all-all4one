@@ -22,7 +22,7 @@ public class HelpSubmissionDTO {
     @NotBlank
     private String uplinerLevel; // Optional: can be String or Integer
 
-    private MultipartFile proofUrl; // uploaded file URL (optional initially)
+    private String proof; // uploaded file URL (optional initially)
     @NotBlank
     private String receiverMobile;
 

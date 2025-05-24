@@ -63,8 +63,8 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
             );
         }
 
-        // 3️⃣ Upload file and build HelpSubmission record
-        String fileUrl = fileStorageService.uploadProofFile(dto.getProofUrl());
+        
+        
 
         HelpSubmission submission = new HelpSubmission();
         submission.setSenderMemberId(dto.getOfaMemberId());
@@ -72,7 +72,7 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
         submission.setUplinerLevel(level);
         submission.setSubmittedAmount(dto.getAmount());
         submission.setReceiverMobile(dto.getReceiverMobile());
-        submission.setProofUrl(fileUrl);
+        submission.setProof(dto.getProof());
         submission.setSubmissionStatus(SubmissionStatus.SUBMITTED);
         submission.setTransactionDate(LocalDateTime.now());
         submission.setSubmissionReferenceId(UUID.randomUUID().toString());

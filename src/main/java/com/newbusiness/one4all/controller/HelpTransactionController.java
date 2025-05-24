@@ -32,8 +32,8 @@ public class HelpTransactionController {
     private final HelpTransactionService helpTransactionService;
     private final HelpSubmissionAuditLogRepository auditLogRepository;
     @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
-    @PostMapping(value="/give",consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<ApiResponse> giveHelp(@ModelAttribute HelpSubmissionDTO dto) throws Exception {
+    @PostMapping(value="/give",consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<ApiResponse> giveHelp(@RequestBody HelpSubmissionDTO dto) throws Exception {
         String loggedInUser = SecurityUtils.getLoggedInMemberId();
         if (SecurityUtils.isSpecialMember(loggedInUser)) {
         	ApiResponse error = ResponseUtils.buildPlainError("Special members are not required to help their upliners.", 400);

@@ -324,9 +324,9 @@
 							"type": "text"
 						},
 						{
-							"key": "proofUrl",
-							"type": "file",
-							"src": "/Users/prudhviprabhat/Downloads/20200316.jpg"
+							"key": "proof",
+							"type": "text",
+							"src": "20200316"
 						}
 					]
 				},
