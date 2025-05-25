@@ -1,4 +1,3 @@
-
 package com.newbusiness.one4all.exception;
 
 import java.time.LocalDateTime;
@@ -44,11 +43,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	// You can also add specific handlers for specific types of exceptions
 	  @ExceptionHandler(IllegalArgumentException.class)
 	    public ResponseEntity<ApiResponse> handleIllegalArgumentException(IllegalArgumentException ex, WebRequest request) {
-	        log.error("Bad Request: {}", ex.getMessage());
+	        log.error("Bad Request: {}", ex.getMessage(), ex);
 	        return ResponseEntity.badRequest().body(
-	                ResponseUtils.buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value())
+					ResponseUtils.buildErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST.value(), "Bad Request")
 	        );
 	    }
+
+    @ExceptionHandler(DuplicatePaymentException.class)
+    public ResponseEntity<ApiResponse> handleDuplicatePaymentException(DuplicatePaymentException ex, WebRequest request) {
+        log.error("Duplicate Payment: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(
+				ResponseUtils.buildErrorResponse(ex.getMessage(), HttpStatus.CONFLICT.value(), "Duplicate Payment")
+        );
+    }
 
 //	@ExceptionHandler(MaxUploadSizeExceededException.class)
 //	public ResponseEntity<ApiResponse> handleMaxSizeException(MaxUploadSizeExceededException exc) {
@@ -122,23 +129,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	 * Handle general exceptions that are not caught by specific handlers
 	 */
 	@ExceptionHandler(Exception.class)
-	public ResponseEntity<ApiResponse> handleGlobalException(Exception ex, WebRequest request) {
-		logger.error("Global exception caught: ", ex);
-
-		List<Map<String, Object>> error = Collections.singletonList(Map.of("status", "Internal Server Error",
-				"errorCode", HttpStatus.INTERNAL_SERVER_ERROR.value(), "message", ex.getMessage()));
-
-		ApiResponse apiResponse = new ApiResponse(generateCorrelationID(), getCurrentTimestamp(), error);
-		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
-	}
+	public ResponseEntity<ApiResponse<Object>> handleGlobalException(Exception ex, WebRequest request) {
+        log.error("Global exception caught: ", ex);
+        List<Map<String, Object>> error = Collections.singletonList(Map.of("status", "Internal Server Error",
+                "errorCode", HttpStatus.INTERNAL_SERVER_ERROR.value(), "message", ex.getMessage()));
+        ApiResponse<Object> apiResponse = new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), error);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(apiResponse);
+    }
 	
-	@ExceptionHandler(DuplicatePaymentException.class)
-	public ResponseEntity<ApiResponse<?>> handleDuplicate(DuplicatePaymentException ex) {
-	    ApiResponse<?> response = ResponseUtils.buildPlainError(ex.getMessage(), 409);
-	    return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
-	}
-
 }
-	
+
 
 

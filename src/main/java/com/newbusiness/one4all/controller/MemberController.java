@@ -8,8 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -54,8 +52,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api")
 public class MemberController {
 
-	private static final Logger logger = LoggerFactory.getLogger(MemberController.class);
-
 	@Autowired private MemberService userService;
 	@Autowired private PasswordResetService resetService;
 	@Autowired private JwtEncoder jwtEncoder;
@@ -71,7 +67,7 @@ public class MemberController {
 	                                      @RequestHeader(required = false) Set<String> roles,
 	                                      BindingResult result) {
 
-		logger.info("📩 Registering new user: {}", user.getOfaEmail());
+		log.info("📩 Registering new user: {}", user.getOfaEmail());
 
 		if (!SecurityUtils.isValidClientToken(clientToken, jwtDecoder)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid client token");
@@ -110,7 +106,7 @@ public class MemberController {
 			)));
 
 		} catch (Exception e) {
-			logger.error("❌ Registration error: ", e);
+			log.error("❌ Registration error: ", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Registration failed.");
 		}
 	}
@@ -122,7 +118,7 @@ public class MemberController {
 	                                       @RequestHeader Set<String> roles,
 	                                       BindingResult result) {
 
-		logger.info("🛡 Admin registration request: {}", user.getOfaEmail());
+		log.info("🛡 Admin registration request: {}", user.getOfaEmail());
 
 		if (!SecurityUtils.isValidClientToken(clientToken, jwtDecoder)) {
 			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid client token");
@@ -156,7 +152,7 @@ public class MemberController {
 			)));
 
 		} catch (Exception e) {
-			logger.error("❌ Admin registration failed", e);
+			log.error("❌ Admin registration failed", e);
 			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Admin registration failed.");
 		}
 	}
@@ -213,7 +209,7 @@ public class MemberController {
 		String token = resetService.createResetToken(email);
 		if (token != null) {
 			String resetLink = "http://localhost:3000/reset-password/confirm/" + token;
-			logger.info("🔗 Password Reset Link: {}", resetLink); // You can send this via email
+			log.info("🔗 Password Reset Link: {}", resetLink); // You can send this via email
 		}
 		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", "If email exists, reset link has been sent."))));
 	}
@@ -245,8 +241,8 @@ public class MemberController {
 	}
 	
 	@GetMapping("/member/profile/{memberId}")
-	public ResponseEntity<ApiResponse> getMemberProfile(@PathVariable String memberId) {
-		logger.info("inside member profile method");
+	public ResponseEntity<ApiResponse<Object>> getMemberProfile(@PathVariable String memberId) {
+		log.info("inside member profile method");
 		MemberProfileResponse profile=userService.getMemberProfile(memberId);
 		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
 				Map.of("statusMessage", GlobalConstants.PROFILEDETAILS_SUCCESS_MSZ, "status", HttpStatus.FOUND,
@@ -254,10 +250,10 @@ public class MemberController {
 			)));
 	}
 	@PutMapping("/member/profile/{memberId}")
-	public ResponseEntity<ApiResponse> updateMemberProfile(
+	public ResponseEntity<ApiResponse<Object>> updateMemberProfile(
 	        @PathVariable String memberId,
 	        @Valid @RequestBody UpdateProfileRequest request) {
-		logger.info("inside updateMemberProfile method");
+		log.info("inside updateMemberProfile method");
 		MemberProfileResponse profile=userService.updateMemberProfile(memberId, request);
 		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
 				Map.of("statusMessage", GlobalConstants.PROFILEDETAILS_UPDTAE_SUCCESS_MSZ, "status", HttpStatus.CREATED,
@@ -267,7 +263,7 @@ public class MemberController {
 	 
 	@GetMapping("/unassigned-members")
 	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW})
-	public ResponseEntity<ApiResponse> getUnassignedMembers(@RequestParam(defaultValue = "0") int page,
+	public ResponseEntity<ApiResponse<Object>> getUnassignedMembers(@RequestParam(defaultValue = "0") int page,
 		    @RequestParam(defaultValue = "10") int size) {
 		Pageable pageable = PageRequest.of(page, size);
 		Page<UnassignedMemberToReffererSystemDto> unassignedMembers = userService.getUnassignedMembers(pageable);

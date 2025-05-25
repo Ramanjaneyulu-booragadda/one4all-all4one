@@ -2,6 +2,7 @@ package com.newbusiness.one4all.controller;
 
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/help")
 @RequiredArgsConstructor
+@Slf4j
 public class HelpTransactionController {
 
     private final HelpTransactionService helpTransactionService;
@@ -34,7 +36,8 @@ public class HelpTransactionController {
     @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @PostMapping(value="/give",consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ApiResponse> giveHelp(@RequestBody HelpSubmissionDTO dto) throws Exception {
-        String loggedInUser = SecurityUtils.getLoggedInMemberId();
+    	log.info("Received help submission request from sender: {}", dto.getOfaMemberId());
+    	String loggedInUser = SecurityUtils.getLoggedInMemberId();
         if (SecurityUtils.isSpecialMember(loggedInUser)) {
         	ApiResponse error = ResponseUtils.buildPlainError("Special members are not required to help their upliners.", 400);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);

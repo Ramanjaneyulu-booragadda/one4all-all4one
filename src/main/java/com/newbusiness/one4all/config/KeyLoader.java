@@ -12,8 +12,10 @@ import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 
+@Slf4j
 public class KeyLoader {
 	private static String readPemContent(InputStream inputStream) throws Exception {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
@@ -47,14 +49,14 @@ public class KeyLoader {
     }
 
     public static KeyPair loadKeyPair(String privateKeySource, String publicKeySource) throws IOException, Exception {
-    	System.out.println("🔐 [DEBUG] Reading public key from: " + publicKeySource);
-    	System.out.println("🔐 [DEBUG] Reading private key from: " + privateKeySource);
+    	log.debug("🔐 [DEBUG] Reading public key from: " + publicKeySource);
+    	log.debug("🔐 [DEBUG] Reading private key from: " + privateKeySource);
 
     	String publicKeyContent = readPemContent(new ClassPathResource(publicKeySource).getInputStream());
     	String privateKeyContent = readPemContent(new ClassPathResource(privateKeySource).getInputStream());
 
-    	System.out.println("🔐 Public Key Content:\n" + publicKeyContent);
-    	System.out.println("🔐 Private Key Content:\n" + privateKeyContent);
+    	log.debug("🔐 Public Key Content:\n" + publicKeyContent);
+    	log.debug("🔐 Private Key Content:\n" + privateKeyContent);
 
         return new KeyPair(loadPublicKey(publicKeySource), loadPrivateKey(privateKeySource));
     }

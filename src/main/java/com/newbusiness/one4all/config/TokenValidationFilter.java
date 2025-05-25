@@ -5,8 +5,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.newbusiness.one4all.util.ApiResponse;
+import com.newbusiness.one4all.util.ResponseUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -16,21 +18,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.util.ContentCachingRequestWrapper;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.newbusiness.one4all.util.ApiResponse;
-import com.newbusiness.one4all.util.ResponseUtils;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class TokenValidationFilter extends OncePerRequestFilter {
 
 	private final JwtDecoder jwtDecoder;
 	private final ObjectMapper objectMapper;
-	private static final Logger logger = LoggerFactory.getLogger(TokenValidationFilter.class);
 	@Autowired
 	private Environment env; // 🔥 Inject Environment to fetch clientID
 
@@ -44,13 +42,13 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
 		HttpServletRequest wrappedRequest = new ContentCachingRequestWrapper(request); // <-- wrapper
-		logger.info("➡️ HTTP Method: {}", request.getMethod());
-		logger.info("➡️ URI: {}", request.getRequestURI());
-		logger.info("➡️ Headers:");
-		Collections.list(request.getHeaderNames()).forEach(h -> logger.info("     {}: {}", h, wrappedRequest.getHeader(h)));
+		log.info("➡️ HTTP Method: {}", request.getMethod());
+		log.info("➡️ URI: {}", request.getRequestURI());
+		log.info("➡️ Headers:");
+		Collections.list(request.getHeaderNames()).forEach(h -> log.info("     {}: {}", h, wrappedRequest.getHeader(h)));
 
 		String requestUri = wrappedRequest.getRequestURI();
-		logger.info("Processing request: {}", requestUri);
+		log.info("Processing request: {}", requestUri);
 		
 		if (requestUri.equals("/api/login") || requestUri.equals("/api/register")
 				||requestUri.equals("/api/admin/login") || requestUri.equals("/api/admin/register")
@@ -83,7 +81,7 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 	private boolean isValidClientToken(String clientToken) {
 		try {
 			if (clientToken == null) {
-				logger.error("Client token is missing.");
+				log.error("Client token is missing.");
 				return false;
 			}
 
@@ -97,12 +95,12 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 			// Check if audience contains expectedClientID
 			boolean isValidAudience = audienceList != null && audienceList.contains(expectedClientID);
 
-			logger.info("🟢 JWT 'aud' claim: {}", audienceList);
-			logger.info("🟢 Expected ClientID: {}", expectedClientID);
+			log.info("🟢 JWT 'aud' claim: {}", audienceList);
+			log.info("🟢 Expected ClientID: {}", expectedClientID);
 
 			return isValidAudience;
 		} catch (JwtException e) {
-			logger.error("JWT validation failed: {}", e.getMessage());
+			log.error("JWT validation failed: {}", e.getMessage());
 			return false;
 		}
 	}
@@ -111,15 +109,15 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 		try {
 			if (userToken == null)
 				return false;
-			logger.info("🛡️  Raw User Token: {}", userToken);
+			log.info("🛡️  Raw User Token: {}", userToken);
 
 			Jwt jwt = jwtDecoder.decode(userToken.replace("Bearer ", ""));
-			logger.info("🪪 Decoded User JWT Header: {}", jwt.getHeaders());
-			logger.info("🧾 Decoded User JWT Claims: {}", jwt.getClaims());
-			logger.info("✅ Token successfully decoded");
+			log.info("🪪 Decoded User JWT Header: {}", jwt.getHeaders());
+			log.info("🧾 Decoded User JWT Claims: {}", jwt.getClaims());
+			log.info("✅ Token successfully decoded");
 			return jwt.getClaim("roles") != null;
 		} catch (JwtException e) {
-			logger.error("❌ User JWT decoding failed: {}", e.getMessage());
+			log.error("❌ User JWT decoding failed: {}", e.getMessage());
 			e.printStackTrace();
 			return false;
 		}

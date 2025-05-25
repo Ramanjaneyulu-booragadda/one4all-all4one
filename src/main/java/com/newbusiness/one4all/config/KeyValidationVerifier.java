@@ -18,7 +18,10 @@ import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
 import com.nimbusds.jose.jwk.JWKSet;
 import com.nimbusds.jose.jwk.RSAKey;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Component
+@Slf4j
 public class KeyValidationVerifier {
 
     @Value("${rsa.private.key}")
@@ -30,7 +33,7 @@ public class KeyValidationVerifier {
     @PostConstruct
     public void verifyKeyPair() {
         try {
-            System.out.println("🔐 Verifying RSA Key Pair...");
+            log.info("🔐 Verifying RSA Key Pair...");
             KeyPair keyPair = KeyLoader.loadKeyPair(privateKeyPath, publicKeyPath);
 
             RSAKey rsaKey = new RSAKey.Builder((RSAPublicKey) keyPair.getPublic())
@@ -52,10 +55,9 @@ public class KeyValidationVerifier {
                     .build()
                     .decode(token);
 
-            System.out.println("✅ Token successfully encoded and decoded. RSA key pair is valid!");
+            log.info("✅ Token successfully encoded and decoded. RSA key pair is valid!");
         } catch (Exception e) {
-            System.err.println("❌ Key Pair verification failed:");
-            e.printStackTrace();
+            log.error("❌ Key Pair verification failed:", e);
         }
     }
 }

@@ -6,6 +6,9 @@ import org.springframework.stereotype.Service;
 import com.newbusiness.one4all.dto.HelpDashboardProjection;
 import com.newbusiness.one4all.repository.HelpSubmissionRepository;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class HelpDashboardService {
 
@@ -13,9 +16,10 @@ public class HelpDashboardService {
     private HelpSubmissionRepository helpSubmissionRepository; // or HelpDashboardRepository
 
     public HelpDashboardProjection getHelpSummary(String memberId) {
-    	 HelpDashboardProjection summary = helpSubmissionRepository.getHelpSummary(memberId);
-    	    System.out.println("Fetched Summary for " + memberId + ": " + summary);
-    	    return summary;
+        log.info("Fetching help summary for memberId={}", memberId);
+        HelpDashboardProjection summary = helpSubmissionRepository.getHelpSummary(memberId);
+        log.info("Fetched help summary for memberId={}: {}", memberId, summary);
+        return summary;
     }
 }
 

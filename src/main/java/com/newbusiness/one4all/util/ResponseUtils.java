@@ -4,14 +4,16 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 
-
 import de.huxhorn.sulky.ulid.ULID;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class ResponseUtils {
 	private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
     public static String generateCorrelationID() {
@@ -24,22 +26,25 @@ public class ResponseUtils {
     }
 
     // ✅ Generic success
-    public static ApiResponse buildApiResponse(List<Map<String, Object>> messages) {
-        return new ApiResponse(generateCorrelationID(), getCurrentTimestamp(), messages);
+    public static ApiResponse<Object> buildApiResponse(List<Map<String, Object>> messages) {
+        log.info("Building API response with messages: {}", messages);
+        return new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), messages);
     }
 
     // ✅ Refined for clear success format
-    public static ApiResponse buildSuccessResponse(Object data, String messageText) {
+    public static ApiResponse<Object> buildSuccessResponse(Object data, String messageText) {
+        log.info("Building success response: messageText={}, data={}", messageText, data);
         Map<String, Object> successMessage = Map.of(
             "status", "OK",
             "statusMessage", messageText,
             "data", data
         );
-        return new ApiResponse(generateCorrelationID(), getCurrentTimestamp(), List.of(successMessage));
+        return new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), List.of(successMessage));
     }
 
     // ✅ Refined error format
-    public static ApiResponse buildErrorResponse(String status, int code, String descriptionKey) {
+    public static ApiResponse<Object> buildErrorResponse(String status, int code, String descriptionKey) {
+        log.error("Building error response: status={}, code={}, descriptionKey={}", status, code, descriptionKey);
         String description = GlobalConstants.ERROR_MESSAGES.getOrDefault(descriptionKey, "Unexpected error.");
 
         Map<String, Object> errorDetails = Map.of(
@@ -49,27 +54,20 @@ public class ResponseUtils {
 
         Map<String, Object> errorMessage = Map.of(
             "status", status,
-            "statusMessage", description
+            "errorDetails", errorDetails
         );
 
-        return new ApiResponse(generateCorrelationID(), getCurrentTimestamp(), "Error",
-                List.of(errorMessage), errorDetails);
+        return new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), List.of(errorMessage));
     }
 
     // ✅ Validation error response
-    public static ApiResponse buildValidationErrorResponse(List<Map<String, Object>> fieldErrors) {
+    public static ApiResponse<Object> buildValidationErrorResponse(List<Map<String, Object>> fieldErrors) {
+        log.error("Building validation error response: {}", fieldErrors);
         Map<String, Object> errorMessage = Map.of(
-            "status", "BAD_REQUEST",
-            "statusMessage", "Validation Failed"
-        );
-
-        Map<String, Object> errorDetails = Map.of(
-            "code", 400,
+            "status", "Validation Error",
             "fieldErrors", fieldErrors
         );
-
-        return new ApiResponse(generateCorrelationID(), getCurrentTimestamp(), "Error",
-                List.of(errorMessage), errorDetails);
+        return new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), List.of(errorMessage));
     }
 
     public static Map<String, Object> createMessage(Object... keyValues) {
@@ -107,60 +105,25 @@ public class ResponseUtils {
         Set<String> userRoles = getCurrentUserRoles();
         return Arrays.stream(roles).anyMatch(userRoles::contains);
     }
-    public static ApiResponse buildSuccessResponse(Object data) {
-        return buildSuccessResponse(data, "Success");
+    public static ApiResponse<Object> buildSuccessResponse(Object data) {
+        log.info("Building success response with data only: {}", data);
+        return new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), List.of(Map.of("data", data)));
     }
-    public static ApiResponse<Object> buildSuccessResponse(String messageText) {
-        String transactionID = generateCorrelationID();
-        String transactionDate = LocalDateTime.now().format(FORMATTER);
-        return new ApiResponse<>(transactionID, transactionDate, messageText);
-    }
-    public static ApiResponse<Object> buildSuccessResponse(List<Map<String, Object>> messages) {
-        String transactionID = generateCorrelationID();
-        String transactionDate = LocalDateTime.now().format(FORMATTER);
-        return new ApiResponse<>(transactionID, transactionDate, messages);
-    }
-    public static ApiResponse<Object> buildErrorResponse(String errorMessage, int errorCode) {
-        String transactionID = generateCorrelationID();
-        String transactionDate = LocalDateTime.now().format(FORMATTER);
-
-        Map<String, Object> errorDetails = new HashMap<>();
-        errorDetails.put("code", errorCode);
-        errorDetails.put("message", errorMessage);
-
-        return new ApiResponse<>(transactionID, transactionDate, "Error", Collections.emptyList(), errorDetails);
-    }
-    public static ResponseEntity<ApiResponse> buildUnauthorizedResponse(String message) {
-        Map<String, Object> error = Map.of(
-            "status", "UNAUTHORIZED",
-            "statusMessage", message
-        );
-        ApiResponse response = new ApiResponse(
-            generateCorrelationID(),
-            getCurrentTimestamp(),
-            "Error",
-            List.of(error),
-            Map.of("code", 401, "description", message)
-        );
+    public static ResponseEntity<ApiResponse<Object>> buildUnauthorizedResponse(String message) {
+        log.warn("Building unauthorized response: {}", message);
+        ApiResponse<Object> response = new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), List.of(Map.of("error", message)));
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
- // ✅ Simple success with plain messageText
-    public static ApiResponse buildPlainSuccess(String messageText) {
-        ApiResponse response = new ApiResponse();
-        response.setTransactionID(generateCorrelationID());
-        response.setTransactionDate(getCurrentTimestamp());
-        response.setStatus("Success");
-        response.setMessageText(messageText);
+    public static ApiResponse<Object> buildPlainSuccess(String messageText) {
+        log.info("Building plain success response: {}", messageText);
+        ApiResponse<Object> response = new ApiResponse<>();
+        response.setMessages(List.of(Map.of("message", messageText)));
         return response;
     }
-
-    // ✅ Simple error with plain messageText
-    public static ApiResponse buildPlainError(String messageText, int statusCode) {
-        ApiResponse response = new ApiResponse();
-        response.setTransactionID(generateCorrelationID());
-        response.setTransactionDate(getCurrentTimestamp());
-        response.setStatus("Error");
-        response.setMessageText(messageText);
+    public static ApiResponse<Object> buildPlainError(String messageText, int statusCode) {
+        log.error("Building plain error response: {}, statusCode={}", messageText, statusCode);
+        ApiResponse<Object> response = new ApiResponse<>();
+        response.setMessages(List.of(Map.of("error", messageText)));
         response.setErrorDetails(Map.of("code", statusCode));
         return response;
     }

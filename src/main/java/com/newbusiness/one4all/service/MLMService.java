@@ -11,7 +11,10 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.extern.slf4j.Slf4j;
 
+
+@Slf4j
 @Service
 @Transactional
 public class MLMService {
@@ -24,7 +27,9 @@ public class MLMService {
 	 * Retrieve the referral bonus amount from properties.
 	 */
 	public BigDecimal getReferralBonusFromProperties() {
-		return new BigDecimal(environment.getProperty("mlm.bonus.direct.referral", "1000"));
+		BigDecimal bonus = new BigDecimal(environment.getProperty("mlm.bonus.direct.referral", "1000"));
+		log.info("Fetched referral bonus from properties: {}", bonus);
+		return bonus;
 	}
 
 	/**
@@ -38,6 +43,7 @@ public class MLMService {
 			BigDecimal payout = new BigDecimal(environment.getProperty(propertyKey, defaultValue));
 			payoutScheme.put(level, payout);
 		}
+		log.info("Fetched payout scheme from properties: {}", payoutScheme);
 		return payoutScheme;
 	}
 

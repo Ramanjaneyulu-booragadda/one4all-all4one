@@ -10,13 +10,18 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class SecurityUtils {
 
     public static boolean isValidClientToken(String clientToken, JwtDecoder jwtDecoder) {
         try {
             Jwt jwt = jwtDecoder.decode(clientToken.replace("Bearer ", ""));
+            log.info("Validated client token for client_id={}", String.valueOf(jwt.getClaim("client_id")));
             return jwt.getClaim("client_id") != null;
         } catch (Exception e) {
+            log.error("Invalid client token: {}", clientToken, e);
             return false;
         }
     }
@@ -24,8 +29,10 @@ public class SecurityUtils {
     public static boolean isValidUserToken(String userToken, JwtDecoder jwtDecoder) {
         try {
             Jwt jwt = jwtDecoder.decode(userToken.replace("Bearer ", ""));
+            log.info("Validated user token for roles={}", String.valueOf(jwt.getClaim("roles")));
             return jwt.getClaim("roles") != null;
         } catch (Exception e) {
+            log.error("Invalid user token: {}", userToken, e);
             return false;
         }
     }

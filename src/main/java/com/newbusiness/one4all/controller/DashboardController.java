@@ -18,22 +18,29 @@ import com.newbusiness.one4all.util.GlobalConstants;
 import com.newbusiness.one4all.util.ResponseUtils;
 import com.newbusiness.one4all.util.SecurityUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping("/api/dashboard")
+@Slf4j
 public class DashboardController {
-
     @Autowired
     private HelpDashboardService helpDashboardService;
     @RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
     @GetMapping("/summary/{memberId}")
-    public ResponseEntity<ApiResponse> getHelpSummary(@PathVariable String memberId) {
-    	 String loggedInUser = SecurityUtils.getLoggedInMemberId();
-         if (!loggedInUser.equals(memberId)) {
-             ApiResponse error = ResponseUtils.buildSuccessResponse(Map.of("error", "Invalid user token for this request"), "Unauthorized");
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
-         }
-    	HelpDashboardProjection summary = helpDashboardService.getHelpSummary(memberId);
-        return ResponseEntity.ok(ResponseUtils.buildSuccessResponse(summary, "Help Summary Retrieved"));
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    public ResponseEntity<ApiResponse<Object>> getHelpSummary(@PathVariable String memberId) {
+        log.info("Received getHelpSummary request for memberId: {}", memberId);
+        String loggedInUser = SecurityUtils.getLoggedInMemberId();
+        if (!loggedInUser.equals(memberId)) {
+            log.warn("Unauthorized access attempt by user: {} for memberId: {}", loggedInUser, memberId);
+            ApiResponse<Object> error = (ApiResponse<Object>) (ApiResponse) ResponseUtils.buildSuccessResponse(Map.of("error", "Invalid user token for this request"), "Unauthorized");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+        HelpDashboardProjection summary = helpDashboardService.getHelpSummary(memberId);
+        log.info("Help summary retrieved for memberId: {}", memberId);
+        ApiResponse<Object> response = (ApiResponse<Object>) (ApiResponse) ResponseUtils.buildSuccessResponse(summary, "Help Summary Retrieved");
+        return ResponseEntity.ok(response);
     }
 }
 

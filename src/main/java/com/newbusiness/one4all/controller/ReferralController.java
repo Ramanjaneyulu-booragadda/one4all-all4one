@@ -7,8 +7,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,15 +37,13 @@ import lombok.extern.slf4j.Slf4j;
 @RestController
 @RequestMapping("/api")
 public class ReferralController {
-
-	private static final Logger logger = LoggerFactory.getLogger(ReferralController.class);
 	
 	@Autowired
 	private ReferralService referralService; 
 	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW})
 	@PostMapping("/addreferer")
 	public ResponseEntity<?> addReferer(@Valid @RequestBody ReferrerDetails  referrerDetails, BindingResult result) {
-	    logger.info("Add referer request received: {}", referrerDetails);
+	    log.info("Add referer request received: {}", referrerDetails);
 	    if (result.hasErrors()) {
 	        List<Map<String, Object>> errorMessages = result.getAllErrors().stream().map(error -> {
 	            Map<String, Object> errorMap = new HashMap<>();
@@ -56,7 +52,7 @@ public class ReferralController {
 	            errorMap.put("rejectedValue", ((FieldError) error).getRejectedValue());
 	            return errorMap;
 	        }).collect(Collectors.toList());
-	        ApiResponse apiResponse = ResponseUtils.buildValidationErrorResponse(errorMessages);
+	        ApiResponse<Object> apiResponse = ResponseUtils.buildValidationErrorResponse(errorMessages);
 	        return ResponseEntity.badRequest().body(apiResponse);
 	    }
 
@@ -66,7 +62,7 @@ public class ReferralController {
 	        
 	        if (existingreferrral.isPresent()) {
 	            // Return a message indicating the record already exists
-	        	ApiResponse apiResponse = ResponseUtils.buildApiResponse(
+	        	ApiResponse<Object> apiResponse = ResponseUtils.buildApiResponse(
 		                Collections.singletonList(Map.of("status", GlobalConstants.DUPLICATE_REFFERAR_RECORD_FOUND + referrerDetails.getMemberId(), "errorCode",
 		                        HttpStatus.CONFLICT, "message", Collections.singletonList(existingreferrral))));
 	        	return ResponseEntity.status(HttpStatus.CONFLICT).body(apiResponse);
@@ -76,14 +72,14 @@ public class ReferralController {
 	                    referrerDetails.getReferrerId(), 
 	                    referrerDetails.getReferralLevel()
 	                );
-	        	 ApiResponse apiResponse = ResponseUtils.buildApiResponse(
+	        	 ApiResponse<Object> apiResponse = ResponseUtils.buildApiResponse(
 	 	                Collections.singletonList(Map.of("status", GlobalConstants.REFFERAR_CREATION_SUCCESS, "errorCode",
 	 	                        HttpStatus.CREATED, "message", Collections.singletonList(details))));
 	        	 return ResponseEntity.ok(apiResponse);    
 	        
 	        } 
 	    } catch (Exception e) {
-	        logger.error("Error while adding referer", e);
+	        log.error("Error while adding referer", e);
 	        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error while adding referer");
 	    }
 	}
@@ -111,11 +107,11 @@ public class ReferralController {
     }
 	@RoleCheck({GlobalConstants.ROLE_ADMIN_RW,GlobalConstants.ROLE_USER_RO})
 	@GetMapping("/{memberId}/showDownlinerlistWithLevelAndAmount")
-    public ResponseEntity<ApiResponse> showDownlinerListWithLevelAndAmount(@PathVariable String memberId) {
+    public ResponseEntity<ApiResponse<Object>> showDownlinerListWithLevelAndAmount(@PathVariable String memberId) {
         log.info("Fetching downliner list with level and amount for member: {}", memberId);
 
         // ✅ No try-catch needed. Let global exception handler manage errors.
-        ApiResponse apiResponse = ResponseUtils.buildApiResponse(
+        ApiResponse<Object> apiResponse = ResponseUtils.buildApiResponse(
 	                Collections.singletonList(Map.of("status", "Downliner list fetched successfully", "errorCode",
 	                        HttpStatus.FOUND, "message", referralService.getDownlinerListWithLevelAndAmount(memberId))));
         return ResponseEntity.ok(apiResponse);    

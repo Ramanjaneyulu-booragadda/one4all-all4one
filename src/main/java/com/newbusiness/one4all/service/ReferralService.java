@@ -43,9 +43,10 @@ public class ReferralService {
 	private HelpSubmissionRepository helpSubmissionRepository;
 
     public ReferrerDetails addReferer(String memberId, String referrerId, int referralLevel) {
-        // ✅ 1. Check if the member exists in ofa_user_reg_details
+        log.info("Adding referer: memberId={}, referrerId={}, referralLevel={}", memberId, referrerId, referralLevel);
         Optional<Member> memberOpt = memberRepository.findByOfaMemberId(memberId);
         if (memberOpt.isEmpty()) {
+            log.warn("Member does not exist with ID: {}", memberId);
             throw new IllegalArgumentException("Member does not exist with ID: " + memberId);
         }
 
@@ -97,6 +98,7 @@ public class ReferralService {
         // ✅ 8. Save upliner relationships in bulk
         uplinerDetailsRepository.saveAll(uplinerDetailsList);
 
+        log.info("Referer added successfully for memberId={}", memberId);
         return referrerDetails;
     }
 
@@ -108,12 +110,13 @@ public class ReferralService {
         return referrerDetailsRepository.findByMemberId(ofaConsumerNo);
     }
     
-    public List<DownlinerWithMemberDetailsDTO> getDownliners(String referrerId) {
-    	// Fetch all downliner details for the given memberId
-        List<ReferrerDetails> downlinerDetailsList = referrerDetailsRepository.findAllByReferrerId(referrerId);
+    public List<DownlinerWithMemberDetailsDTO> getDownliners(String memberId) {
+        log.info("Fetching downliners for memberId={}", memberId);
+        // Fetch all downliner details for the given memberId
+        List<ReferrerDetails> downlinerDetailsList = referrerDetailsRepository.findAllByReferrerId(memberId);
 
         // Map each ReferrerDetails to DownlinerWithMemberDetailsDTO
-        return downlinerDetailsList.stream().map(downlinerDetails -> {
+        List<DownlinerWithMemberDetailsDTO> downliners = downlinerDetailsList.stream().map(downlinerDetails -> {
             // Fetch the full member details for the downlinerId
             Optional<Member> downlinerMemberOpt = memberRepository.findByOfaMemberId(downlinerDetails.getMemberId());
 
@@ -125,9 +128,12 @@ public class ReferralService {
                 downlinerMemberOpt.orElse(null) // Add downliner member details, or null if not found
             );
         }).collect(Collectors.toList());
+        log.info("Fetched {} downliners for memberId={}", downliners.size(), memberId);
+        return downliners;
     }
     public List<UplinerWithMemberDetailsDTO> getUpliners(String memberId) {
-    // 1. Fetch all upliner details for the given member ID
+        log.info("Fetching upliners for memberId={}", memberId);
+        // 1. Fetch all upliner details for the given member ID
     List<UplinerDetails> uplinerDetailsList = uplinerDetailsRepository.findByMemberId(memberId);
 
     // 2. Bulk fetch help submissions where this member is the sender
@@ -141,7 +147,7 @@ public class ReferralService {
         ));
 
     // 4. Loop through upliner details and enrich DTOs
-    return uplinerDetailsList.stream().map(uplinerDetails -> {
+    List<UplinerWithMemberDetailsDTO> upliners = uplinerDetailsList.stream().map(uplinerDetails -> {
         Optional<Member> uplinerMemberOpt = memberRepository.findByOfaMemberId(uplinerDetails.getUplinerId());
         Optional<Member> currentMemberOpt = memberRepository.findByOfaMemberId(uplinerDetails.getMemberId());
 
@@ -169,9 +175,12 @@ public class ReferralService {
 
         return detailsDTO;
     }).collect(Collectors.toList());
+    log.info("Fetched {} upliners for memberId={}", upliners.size(), memberId);
+    return upliners;
 }
     
     public DownlinerHierarchyDTO getDownlinerHierarchy(String memberId) {
+        log.info("Fetching downliner hierarchy for memberId={}", memberId);
         // Fetch member details for the current member
         Optional<Member> memberOpt = memberRepository.findByOfaMemberId(memberId);
         if (memberOpt.isEmpty()) {
@@ -202,6 +211,7 @@ public class ReferralService {
         }
 
         // Build and return the hierarchy DTO
+        log.info("Fetched downliner hierarchy for memberId={}", memberId);
         return new DownlinerHierarchyDTO(
                 member.getOfaMemberId(),
                 member.getOfaFullName(),
@@ -257,11 +267,13 @@ public class ReferralService {
 	}
     
     public List<DownlinerHelpInfoDto> getDownlinerListWithLevelAndAmount(String memberId) {
+        log.info("Fetching downliner list with level and amount for memberId={}", memberId);
         List<DownlinerHelpInfoDto> downlinerList = new ArrayList<>();
         if (memberId == null || memberId.isBlank()) {
             throw new IllegalArgumentException("Member ID cannot be null or blank");
         }
         buildDownlinerListRecursive(memberId, 1, downlinerList);
+        log.info("Fetched downliner list with level and amount for memberId={}", memberId);
         return downlinerList;
     }
 

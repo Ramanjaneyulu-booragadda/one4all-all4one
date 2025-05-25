@@ -8,7 +8,10 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
+import lombok.extern.slf4j.Slf4j;
+
 @Configuration
+@Slf4j
 public class CorsGlobalConfig {
 
 	 @Bean

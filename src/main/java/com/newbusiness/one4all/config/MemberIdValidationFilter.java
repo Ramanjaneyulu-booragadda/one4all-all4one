@@ -11,13 +11,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
-
+@Slf4j
 public class MemberIdValidationFilter extends OncePerRequestFilter {
 
     private final JwtDecoder jwtDecoder;

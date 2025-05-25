@@ -2,6 +2,7 @@ package com.newbusiness.one4all.service;
 
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import com.newbusiness.one4all.dto.HelpSubmissionDTO;
@@ -23,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class HelpTransactionServiceImpl implements HelpTransactionService {
@@ -33,17 +35,17 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
     private final MLMService mlmService;
     @Override
     public HelpSubmission submitHelpTransaction(HelpSubmissionDTO dto) throws Exception {
-        // 1️⃣ Check for duplicate submission (sender + receiver + level)
+        log.info("Submitting help transaction: sender={}, receiver={}, level={}, amount={}", dto.getOfaMemberId(), dto.getReceiverMemberId(), dto.getUplinerLevel(), dto.getAmount());
         Optional<HelpSubmission> existing = helpSubmissionRepository
             .findBySenderMemberIdAndReceiverMemberIdAndUplinerLevelAndSubmissionStatusNot(
                 dto.getOfaMemberId(),
                 dto.getReceiverMemberId(),
                 Integer.parseInt(dto.getUplinerLevel()),
-                SubmissionStatus.REJECTED // if using enum, convert to string
+                SubmissionStatus.REJECTED
             );
-
         if (existing.isPresent()) {
             HelpSubmission p = existing.get();
+            log.warn("Duplicate payment attempt: sender={}, receiver={}, level={}, existingAmount={}", dto.getOfaMemberId(), dto.getReceiverMemberId(), dto.getUplinerLevel(), p.getSubmittedAmount());
             throw new DuplicatePaymentException(String.format(
                 "Payment already submitted by helper %s to upliner %s for level %s with amount ₹%s",
                 dto.getOfaMemberId(),
@@ -52,20 +54,14 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
                 p.getSubmittedAmount()
             ));
         }
-
-        // 2️⃣ Validate expected amount using level-based payout scheme
         Integer level = Integer.parseInt(dto.getUplinerLevel());
-        BigDecimal expectedAmount = mlmService.getPayoutForPhase(level); // from your MLMService or payout config
-
+        BigDecimal expectedAmount = mlmService.getPayoutForPhase(level);
         if (expectedAmount == null || dto.getAmount().compareTo(expectedAmount) != 0) {
+            log.error("Amount mismatch for help transaction: expected={}, actual={}, sender={}, receiver={}, level={}", expectedAmount, dto.getAmount(), dto.getOfaMemberId(), dto.getReceiverMemberId(), level);
             throw new IllegalArgumentException(
                 String.format("Amount mismatch. Expected ₹%s but got ₹%s", expectedAmount, dto.getAmount())
             );
         }
-
-        
-        
-
         HelpSubmission submission = new HelpSubmission();
         submission.setSenderMemberId(dto.getOfaMemberId());
         submission.setReceiverMemberId(dto.getReceiverMemberId());
@@ -79,7 +75,7 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
 
         // 4️⃣ Save and audit
         HelpSubmission saved = helpSubmissionRepository.save(submission);
-
+        log.info("Help transaction submitted successfully: referenceId={}, sender={}, receiver={}, amount={}", saved.getSubmissionReferenceId(), saved.getSenderMemberId(), saved.getReceiverMemberId(), saved.getSubmittedAmount());
         logAuditAction(saved, "SUBMITTED", dto.getOfaMemberId(), "Help initiated by user " + dto.getOfaMemberId());
 
         return saved;
@@ -88,6 +84,7 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
 
     @Override
     public HelpSubmission verifyHelpTransaction(HelpVerificationDTO dto) {
+        log.info("Verifying help transaction: paymentId={}, status={}", dto.getPaymentId(), dto.getStatus());
         HelpSubmission payment = helpSubmissionRepository.findById(Long.valueOf(dto.getPaymentId()))
                 .orElseThrow(() -> new RuntimeException("Payment not found"));
 
@@ -97,37 +94,44 @@ public class HelpTransactionServiceImpl implements HelpTransactionService {
         payment.setVerificationDate(LocalDateTime.now());
 
         HelpSubmission updated = helpSubmissionRepository.save(payment);
+        log.info("Help transaction verified: paymentId={}, newStatus={}, verifiedBy={}", dto.getPaymentId(), dto.getStatus(), payment.getReceiverMemberId());
         logAuditAction(updated, dto.getStatus(), payment.getReceiverMemberId(), dto.getComments());
         return updated;
     }
 
-    
     public ReceiveHelpPageResponse getReceivedHelps(String memberId) {
+        log.info("Fetching received helps for memberId={}", memberId);
         List<ReceivedHelpDetailDTO> records = helpSubmissionRepository.getReceivedHelpDetails(memberId);
         ReceivedHelpSummaryDTO summary = helpSubmissionRepository.getReceivedHelpSummary(memberId);
+        log.info("Fetched {} received help records for memberId={}", records.size(), memberId);
         return new ReceiveHelpPageResponse(records, summary);
     }
+
     @Override
     public List<HelpSubmission> getGivenHelps(String memberId) {
+        log.info("Fetching given helps for memberId={}", memberId);
         return helpSubmissionRepository.findBySenderMemberId(memberId);
     }
 
     @Override
     public boolean isReceiverAuthorized(String paymentId, String loggedInUserId) {
-        return helpSubmissionRepository.findById(Long.valueOf(paymentId))
+        boolean authorized = helpSubmissionRepository.findById(Long.valueOf(paymentId))
                 .map(p -> p.getReceiverMemberId().equals(loggedInUserId))
                 .orElse(false);
+        log.info("Receiver authorization check: paymentId={}, userId={}, authorized={}", paymentId, loggedInUserId, authorized);
+        return authorized;
     }
 
     @Override
     public void logAuditAction(HelpSubmission payment, String action, String performedBy, String remarks) {
-    	HelpSubmissionAuditLog log = new HelpSubmissionAuditLog();
-        log.setHelpSubmission(payment);
-        log.setAction(action);
-        log.setPerformedBy(performedBy);
-        log.setRemarks(remarks);
-        log.setTimestamp(LocalDateTime.now());
-        auditLogRepo.save(log);
+        log.info("Logging audit action: paymentId={}, action={}, performedBy={}, remarks={}", payment.getSubmissionReferenceId(), action, performedBy, remarks);
+        HelpSubmissionAuditLog logEntry = new HelpSubmissionAuditLog();
+        logEntry.setHelpSubmission(payment);
+        logEntry.setAction(action);
+        logEntry.setPerformedBy(performedBy);
+        logEntry.setRemarks(remarks);
+        logEntry.setTimestamp(LocalDateTime.now());
+        auditLogRepo.save(logEntry);
     }
 
 	

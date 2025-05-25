@@ -35,9 +35,9 @@ import com.newbusiness.one4all.util.SecurityUtils;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 
-
-
+@Slf4j
 @Service
 public class MemberService implements UserDetailsService {
 
@@ -87,20 +87,14 @@ private UplinerDetailsRepository uplinerDetailsRepository;
     // Implement UserDetailsService's method
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Load member by email or username (in this case, member ID or email)
-        Optional<Member> memberOpt = userRepository.findByOfaMemberId(username);
-        
-        if (!memberOpt.isPresent()) {
-            throw new UsernameNotFoundException("User not found with email: " + username);
-        }
-        
-        Member member = memberOpt.get();
-        // Return Spring Security's UserDetails object with roles and permissions
-        return org.springframework.security.core.userdetails.User.builder()
-                .username(member.getOfaMemberId()) // Use email as username
-                .password(member.getOfaPassword()) // Encoded password
-                .roles("USER") // For now, assign a simple role, can be customized
-                .build();
+        log.info("Loading user by username: {}", username);
+        Member member = userRepository.findByOfaMemberId(username)
+                .orElseThrow(() -> {
+                    log.warn("User not found: {}", username);
+                    return new UsernameNotFoundException("User not found: " + username);
+                });
+        log.info("User loaded successfully: {}", username);
+        return (UserDetails) member;
     }
 
     // CRUD operations and other member-related methods
@@ -153,6 +147,7 @@ private UplinerDetailsRepository uplinerDetailsRepository;
         userRepository.save(member);
     }
     public MemberProfileResponse getMemberProfile(String memberId) {
+        log.info("Fetching member profile for memberId={}", memberId);
         Member user = userRepository.findByOfaMemberId(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("User not found with memberId: " + memberId));
 
@@ -184,6 +179,7 @@ return response;
     
     @Transactional
     public MemberProfileResponse updateMemberProfile(String memberId, @Valid UpdateProfileRequest request) {
+        log.info("Updating member profile for memberId={}", memberId);
 
         // Fetch existing user
     	Member user = userRepository.findByOfaMemberId(memberId)

@@ -33,6 +33,9 @@ import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.jwk.source.JWKSource;
 import com.nimbusds.jose.proc.SecurityContext;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Configuration
 public class AuthorizationServerConfig {
 
@@ -108,5 +111,5 @@ public class AuthorizationServerConfig {
         return NimbusJwtDecoder.withPublicKey((RSAPublicKey) rsaKeyPair.getPublic()).build();
     }
 
-    
+    // Example: log.info("AuthorizationServerConfig initialized");
 }

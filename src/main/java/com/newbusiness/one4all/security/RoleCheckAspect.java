@@ -16,6 +16,9 @@ import org.springframework.web.context.request.*;
 
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Aspect
 @Component
 public class RoleCheckAspect {
@@ -25,6 +28,7 @@ public class RoleCheckAspect {
 
     @Around("@annotation(roleCheck)")
     public Object enforceRoles(ProceedingJoinPoint joinPoint, RoleCheck roleCheck) throws Throwable {
+        log.info("Enforcing roles: {}", (Object) roleCheck.value());
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         String userToken = request.getHeader("Authorization");
 
@@ -35,6 +39,8 @@ public class RoleCheckAspect {
 
         Jwt jwt = jwtDecoder.decode(userToken.replace("Bearer ", ""));
         List<String> tokenRoles = jwt.getClaimAsStringList("roles");
+
+        log.info("Enforcing roles: {}", (Object) roleCheck.value());
 
         if (tokenRoles == null || tokenRoles.stream().noneMatch(role -> List.of(roleCheck.value()).contains(role))) {
             return ResponseEntity.status(403).body(ResponseUtils.buildErrorResponse(

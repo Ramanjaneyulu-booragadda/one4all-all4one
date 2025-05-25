@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -11,6 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
+@Slf4j
 @Service
 public class FileStorageService {
 
@@ -28,11 +30,14 @@ public class FileStorageService {
     private String uploadDir;
 
     public String uploadProofFile(MultipartFile file) throws IOException {
+        log.info("Uploading proof file: originalFileName={}, contentType={}", file.getOriginalFilename(), file.getContentType());
         if (file.isEmpty()) {
+            log.warn("Attempted to upload empty file");
             throw new IllegalArgumentException("Uploaded file is empty.");
         }
 
         if (!ALLOWED_CONTENT_TYPES.contains(file.getContentType())) {
+            log.warn("Attempted to upload file with invalid content type: {}", file.getContentType());
             throw new IllegalArgumentException("Only image files and PDFs are allowed.");
         }
 
@@ -51,8 +56,10 @@ public class FileStorageService {
         // Save file
         Files.copy(file.getInputStream(), destination, StandardCopyOption.REPLACE_EXISTING);
 
+        log.info("File uploaded successfully: newFileName={}", newFileName);
+
         // Return accessible proof URL (adjust if you serve from a static base path)
-        return "/uploads/" + newFileName;
+        return newFileName;
     }
 
     private String getFileExtension(String fileName) {
