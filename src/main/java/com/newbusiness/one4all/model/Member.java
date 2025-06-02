@@ -1,24 +1,22 @@
 package com.newbusiness.one4all.model;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
-
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -84,7 +82,7 @@ public class Member {
     @Column(name = "ofa_nationality", nullable = false)
     @NotBlank(message = "{member.nationality.notblank}")
     @Size(max = 50, message = "{member.nationality.size}")
-    private String ofaNationallity;
+    private String ofaNationality;
 
     @Column(name = "ofa_password", nullable = false)
     @NotBlank(message = "{member.password.notblank}")
@@ -108,46 +106,25 @@ public class Member {
 
     @Column(name = "ofa_is_deleted", nullable = false)
     @NotNull(message = "{member.deleted.notnull}")
-    private Integer ofaIsDeleted;
- // Referring member (Upliner)
-    @ManyToOne
-    @JoinColumn(name = "referrer_id")
-    @JsonBackReference 
-    private Member referredBy;
+    private Integer ofaIsDeleted;   
+ // Define the many-to-many relationship with the Role entity
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+        name = "member_roles",
+        joinColumns = @JoinColumn(name = "ofa_id"),
+        inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles;
 
-    // List of downline members (people referred by this member)
-    @OneToMany(mappedBy = "referredBy", cascade = CascadeType.ALL)
-    @JsonManagedReference
-    private List<Member> downliners = new ArrayList();
+    // Other fields, getters, and setters...
 
-    @OneToMany(mappedBy = "uplinerMember", cascade = CascadeType.ALL)
-    private List<UplinerDetails> upliners;
-    
-    private int referralLevel;
-    public int getReferralLevel() {
-        return referralLevel;
+    public Set<Role> getRoles() {
+        return roles;
     }
 
-    public void setReferralLevel(int referralLevel) {
-        this.referralLevel = referralLevel;
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
     }
-
-	public Member getReferredBy() {
-		return referredBy;
-	}
-
-	public void setReferredBy(Member referredBy) {
-		this.referredBy = referredBy;
-	}
-
-	public List<Member> getDownliners() {
-		return downliners;
-	}
-
-	public void setDownliners(List<Member> downliners) {
-		this.downliners = downliners;
-	}
-
 	public Long getOfaId() {
 		return ofaId;
 	}
@@ -220,12 +197,12 @@ public class Member {
 		this.ofaEmail = ofaEmail;
 	}
 
-	public String getOfaNationallity() {
-		return ofaNationallity;
+	public String getOfaNationality() {
+		return ofaNationality;
 	}
 
-	public void setOfaNationallity(String ofaNationallity) {
-		this.ofaNationallity = ofaNationallity;
+	public void setOfaNationality(String ofaNationality) {
+		this.ofaNationality = ofaNationality;
 	}
 
 	public String getOfaPassword() {
@@ -275,15 +252,7 @@ public class Member {
 	public void setOfaIsDeleted(Integer ofaIsDeleted) {
 		this.ofaIsDeleted = ofaIsDeleted;
 	}
-
-	public List<UplinerDetails> getUpliners() {
-		return upliners;
-	}
-
-	public void setUpliners(List<UplinerDetails> upliners) {
-		this.upliners = upliners;
-	}
-
+	
 	
     
 }

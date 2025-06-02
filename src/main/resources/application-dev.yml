@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://one4all.cp2u0w48kyqy.ap-south-1.rds.amazonaws.com:3306/one4all?useSSL=true&requireSSL=true&verifyServerCertificate=false
+    username: root
+    password: Oldisgold$2024
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: 'true'
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+  config:
+    activate:
+      on-profile: dev
+
+server:
+  port: '9090'
+
+id:
+  prefix: O4AA4O
+  number-length: '7'
+
+logging:
+  level:
+    org:
+      springframework:
+        jdbc: DEBUG
+    com:
+      zaxxer:
+        hikari: DEBUG
+      mysql:
+        cj: TRACE
+
+cors:
+  allowed:
+    origins: http://localhost:3000,http://13.201.103.32:9090,https://d104e4whscre9s.cloudfront.net/
+    methods: GET,POST,PUT,DELETE,OPTIONS
