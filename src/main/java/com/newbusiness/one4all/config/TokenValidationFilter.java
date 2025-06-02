@@ -52,7 +52,8 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 		
 		if (requestUri.equals("/api/login") || requestUri.equals("/api/register")
 				||requestUri.equals("/api/admin/login") || requestUri.equals("/api/admin/register")
-				 || requestUri.equals("/api/admin/reset-password-request") || requestUri.equals("/api/reset-password-request")) {
+				 || requestUri.equals("/api/admin/reset-password-request") || requestUri.equals("/api/reset-password-request")
+				 || requestUri.equals("/oauth2/token")) { // <-- Skip client/user token validation for /oauth2/token
 			filterChain.doFilter(wrappedRequest, response);
 			return;
 		}

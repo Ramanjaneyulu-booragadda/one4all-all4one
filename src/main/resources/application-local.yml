@@ -1,0 +1,82 @@
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://db:3306/one4all?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: Oldisgold@2024
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: 'true'
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        enable_lazy_load_no_trans: 'true'
+        format_sql: 'true'
+  main:
+    allow-bean-definition-overriding: 'true'
+  
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+  config:
+    activate:
+      on-profile: local
+
+server:
+  port: '9090'
+
+id:
+  prefix: O4AA4O
+  number-length: '7'
+
+logging:
+  level:
+    org:
+      springframework:
+        jdbc: DEBUG
+        security: DEBUG
+        web: DEBUG
+        http:
+          converter:
+            json: DEBUG
+    com:
+      zaxxer:
+        hikari: DEBUG
+      mysql:
+        cj: TRACE
+
+cors:
+  allowed:
+    origins: http://192.168.29.108:3000
+    methods: GET,POST,PUT,DELETE,OPTIONS
+
+mlm:
+  bonus:
+    direct:
+      referral: '1000'
+  payout:
+    L1: '2000'
+    L2: '1000'
+    L3: '1000'
+    L4: '2500'
+    L5: '5000'
+    L6: '10000'
+    L7: '20000'
+    L8: '30000'
+    L9: '40000'
+    L10: '50000'
+
+microservice:
+  url: http://192.168.29.108:9090
+  clientid: one4all
+  clientsecret: Oldisgold@2025
+  scope: read,write
+
+rsa:
+  private:
+    key: keys/private.pem
+  public:
+    key: keys/public.pem
+

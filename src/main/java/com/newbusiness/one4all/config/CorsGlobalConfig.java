@@ -19,6 +19,7 @@ public class CorsGlobalConfig {
 	        CorsConfiguration config = new CorsConfiguration();
 	        config.setAllowCredentials(true);
 	        config.addAllowedOrigin("http://localhost:3000"); // React/Next.js frontend
+	        config.addAllowedOrigin("http://192.168.29.108:3000"); // Allow LAN IP for mobile access
 	        config.addAllowedHeader("*");
 	        config.addAllowedMethod("*");
 

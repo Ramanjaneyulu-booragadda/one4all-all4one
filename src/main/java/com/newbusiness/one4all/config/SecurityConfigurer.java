@@ -45,21 +45,27 @@ public class SecurityConfigurer {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder,ObjectMapper objectMapper) throws Exception {
-        
-    	String clientID = env.getProperty("microservice.clientid");
+        String clientID = env.getProperty("microservice.clientid");
         System.out.println("🔴 Loaded microservice.clientid: " + clientID);
 
-    	
-    	http
-            .csrf(csrf -> csrf.ignoringRequestMatchers("/api/register", "/api/login", "/api/bulk-register","/api/admin/register","/api/admin/login","/api/reset-password-request"))
-            .cors(cors -> cors.configurationSource(corsConfigurationSource())) // Custom CORS configuration
+        http
+            .csrf(csrf -> csrf.ignoringRequestMatchers(
+                "/api/register", "/api/login", "/api/bulk-register",
+                "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
+                "/oauth2/token" // <-- Added to disable CSRF for token endpoint
+            ))
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/register", "/api/login", "/api/bulk-register","/api/admin/register","/api/admin/login","/api/reset-password-request").permitAll()  
-                .anyRequest().authenticated() // Authenticate all other requests
+                .requestMatchers(
+                    "/api/register", "/api/login", "/api/bulk-register",
+                    "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
+                    "/oauth2/token" 
+                ).permitAll()
+                .anyRequest().authenticated()
             )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Stateless session
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt()) // JWT-based resource server
-            .addFilterBefore(tokenValidationFilter, UsernamePasswordAuthenticationFilter.class); 
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .oauth2ResourceServer(oauth2 -> oauth2.jwt())
+            .addFilterBefore(tokenValidationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -69,7 +75,8 @@ public class SecurityConfigurer {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://localhost:3000"); // Replace with your frontend URL
+        configuration.addAllowedOrigin("http://localhost:3000");
+        configuration.addAllowedOrigin("http://192.168.29.108:3000"); // Allow LAN IP for mobile access
         configuration.addAllowedMethod("*"); // Allow all HTTP methods
         configuration.addAllowedHeader("*"); // Allow all headers
         configuration.setAllowCredentials(true); // Allow cookies or authorization headers
