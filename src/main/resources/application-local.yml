@@ -49,8 +49,8 @@ logging:
 
 cors:
   allowed:
-    origins: http://192.168.29.108:3000
-    methods: GET,POST,PUT,DELETE,OPTIONS
+    origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+    methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
 
 mlm:
   bonus:
@@ -69,10 +69,10 @@ mlm:
     L10: '50000'
 
 microservice:
-  url: http://192.168.29.108:9090
-  clientid: one4all
-  clientsecret: Oldisgold@2025
-  scope: read,write
+  url: ${MICROSERVICE_URL:http://localhost:9090}
+  clientid: ${MICROSERVICE_CLIENTID:one4all}
+  clientsecret: ${MICROSERVICE_CLIENTSECRET:Oldisgold@2025}
+  scope: ${MICROSERVICE_SCOPE:read,write}
 
 rsa:
   private:
