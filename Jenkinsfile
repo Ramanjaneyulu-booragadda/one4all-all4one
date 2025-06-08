@@ -69,13 +69,13 @@ pipeline {
     stage('Update Frontend env.js on S3') {
   steps {
     sshagent([env.SSH_CRED_ID]) {
-      sh """
-        ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} << EOF
-          PUBLIC_IP=\\$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-          echo "window._env_ = { API_BASE_URL: 'http://\\$PUBLIC_IP:8080' };" > env.js
+      sh '''#!/bin/bash
+        ssh -o StrictHostKeyChecking=no ${EC2_HOST} << 'EOF'
+          PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
+          echo "window._env_ = { API_BASE_URL: 'http://$PUBLIC_IP:8080' };" > env.js
           aws s3 cp env.js s3://one4all-all4one-frontend/env.js
         EOF
-      """
+      '''
     }
   }
 }
