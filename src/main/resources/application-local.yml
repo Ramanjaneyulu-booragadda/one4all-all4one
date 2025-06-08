@@ -25,7 +25,8 @@ spring:
       on-profile: local
 
 server:
-  port: '9090'
+  port: 8080
+  address: 0.0.0.0
 
 id:
   prefix: O4AA4O
@@ -69,7 +70,7 @@ mlm:
     L10: '50000'
 
 microservice:
-  url: ${MICROSERVICE_URL:http://localhost:9090}
+  url: ${MICROSERVICE_URL:http://localhost:8080}
   clientid: ${MICROSERVICE_CLIENTID:one4all}
   clientsecret: ${MICROSERVICE_CLIENTSECRET:Oldisgold@2025}
   scope: ${MICROSERVICE_SCOPE:read,write}
