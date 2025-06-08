@@ -74,7 +74,7 @@ pipeline {
           PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
           echo "window._env_ = { API_BASE_URL: 'http://$PUBLIC_IP:8080' };" > env.js
           aws s3 cp env.js s3://one4all-all4one-frontend/env.js
-        EOF
+        
       '''
     }
   }
