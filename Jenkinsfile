@@ -9,7 +9,7 @@ pipeline {
     string(name: 'DB_USER', defaultValue: 'admin', description: 'Database username')
     password(name: 'DB_PASSWORD', defaultValue: 'Oldisgold$2025', description: 'Database password (hidden)')
 
-    string(name: 'EC2_HOST', defaultValue: 'ubuntu@13.234.226.113', description: 'EC2-B Host (user@IP)')
+    string(name: 'EC2_HOST', defaultValue: 'ubuntu@13.202.212.226', description: 'EC2-B Host (user@IP)')
     string(name: 'APP_DIR', defaultValue: '/home/ubuntu/backend', description: 'Remote path to deploy backend')
     string(name: 'JAR_NAME', defaultValue: 'one4all-all4one-0.0.1-SNAPSHOT.jar', description: 'Built JAR filename')
     string(name: 'GIT_REPO_URL', defaultValue: 'https://github.com/Ramanjaneyulu-booragadda/one4all-all4one.git', description: 'Git repo URL')
