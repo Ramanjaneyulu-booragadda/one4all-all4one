@@ -9,7 +9,7 @@ pipeline {
     string(name: 'DB_USER', defaultValue: 'admin', description: 'Database username')
     password(name: 'DB_PASSWORD', defaultValue: 'Oldisgold$2025', description: 'Database password (hidden)')
 
-    string(name: 'EC2_HOST', defaultValue: 'ubuntu@13.234.226.113', description: 'EC2-B Host (user@IP)')
+    string(name: 'EC2_HOST', defaultValue: 'ubuntu@13.202.212.226', description: 'EC2-B Host (user@IP)')
     string(name: 'APP_DIR', defaultValue: '/home/ubuntu/backend', description: 'Remote path to deploy backend')
     string(name: 'JAR_NAME', defaultValue: 'one4all-all4one-0.0.1-SNAPSHOT.jar', description: 'Built JAR filename')
     string(name: 'GIT_REPO_URL', defaultValue: 'https://github.com/Ramanjaneyulu-booragadda/one4all-all4one.git', description: 'Git repo URL')
@@ -65,21 +65,15 @@ pipeline {
         }
       }
     }
-
-    stage('Update Frontend env.js on S3') {
-  steps {
-    sshagent([env.SSH_CRED_ID]) {
-      sh '''#!/bin/bash
-        ssh -o StrictHostKeyChecking=no ${EC2_HOST} << 'EOF'
-          PUBLIC_IP=$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4)
-          echo "window._env_ = { API_BASE_URL: 'http://$PUBLIC_IP:8080' };" > env.js
-          aws s3 cp env.js s3://one4all-all4one-frontend/env.js
-        
-      '''
+    stage('Verify Deployment') {
+      steps {
+        sshagent([env.SSH_CRED_ID]) {
+          sh """
+            ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} 'sudo systemctl status backend || echo "Backend service is not running!"'
+          """
+        }
+      }
     }
-  }
-}
-
   }
 
   post {
