@@ -70,4 +70,9 @@ public class PasswordResetService {
         log.warn("Password reset failed. Member not found for email: {}", reset.getEmail());
         return false;
     }
+
+    // Get email by reset token
+    public Optional<String> getEmailByToken(String token) {
+        return tokenRepo.findByToken(token).map(PasswordResetToken::getEmail);
+    }
 }

@@ -38,6 +38,7 @@ import com.newbusiness.one4all.dto.UpdateProfileRequest;
 import com.newbusiness.one4all.model.Member;
 import com.newbusiness.one4all.model.Role;
 import com.newbusiness.one4all.security.RoleCheck;
+import com.newbusiness.one4all.service.EmailService;
 import com.newbusiness.one4all.service.MemberService;
 import com.newbusiness.one4all.service.PasswordResetService;
 import com.newbusiness.one4all.util.ApiResponse;
@@ -56,9 +57,13 @@ public class MemberController {
 	@Autowired private PasswordResetService resetService;
 	@Autowired private JwtEncoder jwtEncoder;
 	@Autowired private JwtDecoder jwtDecoder;
+	@Autowired private EmailService emailService;
 
 	@Value("${microservice.url}")
 	private String microServiceUrl;
+	
+	@Value("${frontend.reset-password.base-url}")
+	private String resetPasswordBaseUrl;
 
 	// 🚀 Public User Registration
 	@PostMapping(value = "/register", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -100,7 +105,8 @@ public class MemberController {
 				"emailid", registeredUser.getOfaEmail(),
 				"Mobile", registeredUser.getOfaMobileNo()
 			);
-
+			// Send registration email with member details
+			emailService.sendRegistrationEmail(registeredUser.getOfaEmail(), registeredUser.getOfaFullName(), data);
 			return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
 				Map.of("status", "Success", "message", "User Registered Successfully", "RegistrationDetails", data)
 			)));
@@ -146,7 +152,8 @@ public class MemberController {
 				"emailid", registeredAdmin.getOfaEmail(),
 				"Mobile", registeredAdmin.getOfaMobileNo()
 			);
-
+			// Send registration email for admin with member details
+			emailService.sendRegistrationEmail(registeredAdmin.getOfaEmail(), registeredAdmin.getOfaFullName(), data);
 			return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
 				Map.of("status", "Success", "message", "Admin Registered Successfully", "RegistrationDetails", data)
 			)));
@@ -208,17 +215,22 @@ public class MemberController {
 		String email = request.get("email");
 		String token = resetService.createResetToken(email);
 		if (token != null) {
-			String resetLink = "http://localhost:3000/reset-password/confirm/" + token;
-			log.info("🔗 Password Reset Link: {}", resetLink); // You can send this via email
+			String resetLink = resetPasswordBaseUrl + token;
+			log.info("🔗 Password Reset Link: {}", resetLink);
+			// Send password reset email
+			emailService.sendPasswordResetEmail(email, resetLink);
 		}
-		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", "If email exists, reset link has been sent."))));
+		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", "Password reset link sent to your Registered email. please check and reset password."))));
 	}
 
 	// ✅ Password Reset: Confirm
 	@PostMapping("/reset-password/confirm")
 	public ResponseEntity<?> confirmReset(@RequestBody Map<String, String> request) {
-		boolean success = resetService.resetPassword(request.get("token"), request.get("newPassword"));
+		String token = request.get("token");
+		boolean success = resetService.resetPassword(token, request.get("newPassword"));
 		if (success) {
+			// Fetch the email from the token using the service method
+			resetService.getEmailByToken(token).ifPresent(emailService::sendPasswordResetSuccessEmail);
 			return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", "Password reset successful."))));
 		}
 		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
