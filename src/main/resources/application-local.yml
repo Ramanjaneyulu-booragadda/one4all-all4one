@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=true
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:one4all}?useSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: ${DB_USER:root}
+    password: ${DB_PASSWORD:password}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -84,9 +84,9 @@ rsa:
 aws:
   ses:
     region: ${AWS_SES_REGION:ap-south-1}
-    access-key: ${AWS_SES_ACCESS_KEY:YOUR_AWS_ACCESS_KEY}
-    secret-key: ${AWS_SES_SECRET_KEY:YOUR_AWS_SECRET_KEY}
-    verified-sender: ${AWS_SES_VERIFIED_SENDER:your-verified@domain.com}
+    access-key: ${AWS_SES_ACCESS_KEY}
+    secret-key: ${AWS_SES_SECRET_KEY}
+    verified-sender: ${AWS_SES_VERIFIED_SENDER}
 
 frontend:
   reset-password:
