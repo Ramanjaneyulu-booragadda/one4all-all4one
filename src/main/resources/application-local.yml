@@ -81,3 +81,17 @@ rsa:
   public:
     key: keys/public.pem
 
+aws:
+  ses:
+    region: ${AWS_SES_REGION:ap-south-1}
+    access-key: ${AWS_SES_ACCESS_KEY:YOUR_AWS_ACCESS_KEY}
+    secret-key: ${AWS_SES_SECRET_KEY:YOUR_AWS_SECRET_KEY}
+    verified-sender: ${AWS_SES_VERIFIED_SENDER:your-verified@domain.com}
+
+frontend:
+  reset-password:
+    base-url: ${FRONTEND_RESET_PASSWORD_BASE_URL:https://one4all-all4one.com/reset-password/confirm/}
+
+upload:
+  dir: ${UPLOAD_DIR:uploads}
+

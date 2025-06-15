@@ -5,8 +5,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 
@@ -18,7 +18,6 @@ public class SecurityUtils {
     public static boolean isValidClientToken(String clientToken, JwtDecoder jwtDecoder) {
         try {
             Jwt jwt = jwtDecoder.decode(clientToken.replace("Bearer ", ""));
-            log.info("Validated client token for client_id={}", String.valueOf(jwt.getClaim("client_id")));
             return jwt.getClaim("client_id") != null;
         } catch (Exception e) {
             log.error("Invalid client token: {}", clientToken, e);
