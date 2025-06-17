@@ -258,12 +258,14 @@ DROP TABLE IF EXISTS `password_reset_tokens`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `password_reset_tokens` (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `email` varchar(255) NOT NULL,
+  `email` varchar(255) DEFAULT NULL,
+  `mobile` varchar(20) DEFAULT NULL,
   `token` varchar(255) NOT NULL,
   `expiry_time` timestamp NOT NULL,
   `used` tinyint(1) DEFAULT '0',
   PRIMARY KEY (`id`),
-  KEY `idx_email` (`email`)
+  KEY `idx_email` (`email`),
+  KEY `idx_mobile` (`mobile`)
 ) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

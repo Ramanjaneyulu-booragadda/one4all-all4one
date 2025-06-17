@@ -10,4 +10,6 @@ import com.newbusiness.one4all.model.PasswordResetToken;
 @Repository
 public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
     Optional<PasswordResetToken> findByToken(String token);
+    Optional<PasswordResetToken> findByEmail(String email);
+    Optional<PasswordResetToken> findByMobile(String mobile);
 }

@@ -50,7 +50,7 @@ public class AuthorizationServerConfig {
     @Value("${microservice.clientsecret}")
     private String clientSecret;
 
-    @Value("${cors.allowed.origins}")
+    @Value("${frontend.base-url}")
     private String frontEndUrl;
 
     @Value("#{'${microservice.scope}'.split(',')}")

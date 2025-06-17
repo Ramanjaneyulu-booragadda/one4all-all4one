@@ -1,6 +1,7 @@
 package com.newbusiness.one4all.service;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -32,6 +33,9 @@ public class EmailService {
 
     @Value("${aws.ses.verified-sender}")
     private String senderEmail;
+
+    @Autowired
+    private SmsService smsService;
 
     public boolean sendEmail(String to, String subject, String htmlBody, String textBody) {
         try (SesClient sesClient = SesClient.builder()
@@ -118,5 +122,26 @@ public class EmailService {
                 + "<p>Best regards,<br/>The One4All Team</p>";
         String textBody = "Dear User,\nYour password has been reset successfully. If you did not perform this action, please contact our support team immediately.\nBest regards,\nThe One4All Team";
         return sendEmail(to, subject, htmlBody, textBody);
+    }
+
+    // Send registration success SMS with details
+    public boolean sendRegistrationSuccessSms(String phoneNumber, String username, Map<String, Object> data) {
+        String smsMessage = "Welcome to One4All, " + username + "! Your registration is successful. " +
+                "Member ID: " + data.getOrDefault("MemberID", "") + ", " +
+                "Email: " + data.getOrDefault("emailid", "") + ", " +
+                "Mobile: " + data.getOrDefault("Mobile", "") + ".";
+        return smsService.sendSms(phoneNumber, smsMessage);
+    }
+
+    // Send password reset success SMS
+    public boolean sendPasswordResetSuccessSms(String phoneNumber) {
+        String smsMessage = "Your One4All password has been reset successfully. If this was not you, please contact support immediately.";
+        return smsService.sendSms(phoneNumber, smsMessage);
+    }
+
+    // Send password reset SMS
+    public boolean sendPasswordResetSms(String phoneNumber, String resetLink) {
+        String smsMessage = "A password reset link sent to your Regestered Mobile. please it for resetting new password.If this was not you, please contact support. Reset link: " + resetLink;
+        return smsService.sendSms(phoneNumber, smsMessage);
     }
 }

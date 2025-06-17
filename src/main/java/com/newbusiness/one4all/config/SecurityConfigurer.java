@@ -52,6 +52,7 @@ public class SecurityConfigurer {
             .csrf(csrf -> csrf.ignoringRequestMatchers(
                 "/api/register", "/api/login", "/api/bulk-register",
                 "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
+                "/api/reset-password/confirm", // <-- Added confirm endpoint
                 "/oauth2/token" // <-- Added to disable CSRF for token endpoint
             ))
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
@@ -59,6 +60,7 @@ public class SecurityConfigurer {
                 .requestMatchers(
                     "/api/register", "/api/login", "/api/bulk-register",
                     "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
+                    "/api/reset-password/confirm", // <-- Added confirm endpoint
                     "/oauth2/token" 
                 ).permitAll()
                 .anyRequest().authenticated()

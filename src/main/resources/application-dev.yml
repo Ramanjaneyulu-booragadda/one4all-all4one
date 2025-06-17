@@ -1,9 +1,9 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:one4all.cp2u0w48kyqy.ap-south-1.rds.amazonaws.com}:${DB_PORT:3306}/${DB_NAME:one4all}?useSSL=true&requireSSL=true&verifyServerCertificate=false
-    username: ${DB_USER:root}
-    password: ${DB_PASSWORD:password}
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=true&requireSSL=true&verifyServerCertificate=false
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
@@ -30,10 +30,10 @@ server:
   address: 0.0.0.0
   ssl:
     enabled: true
-    key-store: classpath:keystore.p12
-    key-store-password: changeit
+    key-store: ${SSL_KEYSTORE_PATH}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD}
     key-store-type: PKCS12
-    key-alias: one4all-backend
+    key-alias: ${SSL_KEY_ALIAS}
 
 id:
   prefix: O4AA4O
@@ -77,27 +77,24 @@ mlm:
     L10: '50000'
 
 microservice:
-  url: ${MICROSERVICE_URL:https://api.one4all-all4one.com}
-  clientid: ${MICROSERVICE_CLIENTID:one4all}
-  clientsecret: ${MICROSERVICE_CLIENTSECRET:Oldisgold@2025}
-  scope: ${MICROSERVICE_SCOPE:read,write}
-
+  url: ${MICROSERVICE_URL}
+  clientid: ${MICROSERVICE_CLIENTID}
+  clientsecret: ${MICROSERVICE_CLIENTSECRET}
+  scope: ${MICROSERVICE_SCOPE}
 rsa:
   private:
-    key: keys/private.pem
+    key: ${RSA_PRIVATE_KEY_PATH}
   public:
-    key: keys/public.pem
-
+    key: ${RSA_PUBLIC_KEY_PATH}
 aws:
   ses:
-    region: ${AWS_SES_REGION:ap-south-1}
+    region: ${AWS_SES_REGION}
     access-key: ${AWS_SES_ACCESS_KEY}
     secret-key: ${AWS_SES_SECRET_KEY}
     verified-sender: ${AWS_SES_VERIFIED_SENDER}
-
 frontend:
   reset-password:
-    base-url: ${FRONTEND_RESET_PASSWORD_BASE_URL:https://one4all-all4one.com/reset-password/confirm/}
-
+    base-url: ${FRONTEND_RESET_PASSWORD_BASE_URL}
+  base-url: ${FRONTEND_BASE_URL}
 upload:
-  dir: ${UPLOAD_DIR:uploads}
+  dir: ${UPLOAD_DIR}

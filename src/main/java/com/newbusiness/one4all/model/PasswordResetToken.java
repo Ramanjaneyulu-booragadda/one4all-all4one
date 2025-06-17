@@ -17,6 +17,7 @@ public class PasswordResetToken {
     private Long id;
 
     private String email;
+    private String mobile; // New field for mobile-based reset
     private String token;
     private Instant expiryTime;
     private boolean used = false;
@@ -32,6 +33,12 @@ public class PasswordResetToken {
 	public void setEmail(String email) {
 		this.email = email;
 	}
+    public String getMobile() {
+        return mobile;
+    }
+    public void setMobile(String mobile) {
+        this.mobile = mobile;
+    }
 	public String getToken() {
 		return token;
 	}
@@ -50,10 +57,11 @@ public class PasswordResetToken {
 	public void setUsed(boolean used) {
 		this.used = used;
 	}
-	public PasswordResetToken(Long id, String email, String token, Instant expiryTime, boolean used) {
+	public PasswordResetToken(Long id, String email, String mobile, String token, Instant expiryTime, boolean used) {
 		super();
 		this.id = id;
 		this.email = email;
+		this.mobile = mobile;
 		this.token = token;
 		this.expiryTime = expiryTime;
 		this.used = used;
