@@ -71,7 +71,7 @@ public class Member {
 
     @Column(name = "ofa_mobile_no", nullable = false)
     @NotBlank(message = "{member.mobile.notblank}")
-    @Size(min = 10,max = 12, message = "{member.mobile.size}")
+    @Size(min = 10,max = 13, message = "{member.mobile.size}")
     private String ofaMobileNo;
 
     @Column(name = "ofa_email", nullable = false)

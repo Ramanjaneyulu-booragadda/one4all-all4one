@@ -264,4 +264,41 @@ return response;
         });
         
     }
+    
+    public Optional<Member> findByOfaEmail(String email) {
+        List<Member> matches = userRepository.findAll().stream()
+            .filter(m -> m.getOfaEmail() != null && m.getOfaEmail().equalsIgnoreCase(email))
+            .toList();
+        if (matches.size() == 1) return Optional.of(matches.get(0));
+        return Optional.empty();
+    }
+
+    public Optional<Member> findByOfaMobileNo(String mobileNo) {
+        List<Member> matches = userRepository.findAll().stream()
+            .filter(m -> m.getOfaMobileNo() != null && m.getOfaMobileNo().equals(mobileNo))
+            .toList();
+        if (matches.size() == 1) return Optional.of(matches.get(0));
+        return Optional.empty();
+    }
+
+    public Optional<Member> getMemberByMemberId(String memberId) {
+        List<Member> matches = userRepository.findAll().stream()
+            .filter(m -> m.getOfaMemberId() != null && m.getOfaMemberId().equals(memberId))
+            .toList();
+        if (matches.size() == 1) return Optional.of(matches.get(0));
+        return Optional.empty();
+    }
+    
+    public Optional<Member> findByEmailAndMemberId(String email, String memberId) {
+        return userRepository.findAll().stream()
+            .filter(m -> m.getOfaEmail() != null && m.getOfaEmail().equalsIgnoreCase(email))
+            .filter(m -> m.getOfaMemberId() != null && m.getOfaMemberId().equals(memberId))
+            .findFirst();
+    }
+    public Optional<Member> findByMobileAndMemberId(String mobile, String memberId) {
+        return userRepository.findAll().stream()
+            .filter(m -> m.getOfaMobileNo() != null && m.getOfaMobileNo().equals(mobile))
+            .filter(m -> m.getOfaMemberId() != null && m.getOfaMemberId().equals(memberId))
+            .findFirst();
+    }
 }

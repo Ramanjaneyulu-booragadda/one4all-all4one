@@ -38,6 +38,20 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 
 	}
 
+	private static final java.util.Set<String> WHITELISTED_PATHS = java.util.Set.of(
+        "/api/login", "/api/register", "/api/bulk-register",
+        "/api/admin/login", "/api/admin/register",
+        "/api/admin/reset-password-request", "/api/reset-password-request",
+        "/api/reset-password/confirm", // <-- Added confirm endpoint
+        "/oauth2/token"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        return WHITELISTED_PATHS.contains(path);
+    }
+
 	@Override
 	protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
 			throws ServletException, IOException {
@@ -45,19 +59,11 @@ public class TokenValidationFilter extends OncePerRequestFilter {
 		log.info("➡️ HTTP Method: {}", request.getMethod());
 		log.info("➡️ URI: {}", request.getRequestURI());
 		log.info("➡️ Headers:");
-		Collections.list(request.getHeaderNames()).forEach(h -> log.info("     {}: {}", h, wrappedRequest.getHeader(h)));
+		java.util.Collections.list(request.getHeaderNames()).forEach(h -> log.info("     {}: {}", h, wrappedRequest.getHeader(h)));
 
 		String requestUri = wrappedRequest.getRequestURI();
 		log.info("Processing request: {}", requestUri);
 		
-		if (requestUri.equals("/api/login") || requestUri.equals("/api/register")
-				||requestUri.equals("/api/admin/login") || requestUri.equals("/api/admin/register")
-				 || requestUri.equals("/api/admin/reset-password-request") || requestUri.equals("/api/reset-password-request")
-				 || requestUri.equals("/oauth2/token")) { // <-- Skip client/user token validation for /oauth2/token
-			filterChain.doFilter(wrappedRequest, response);
-			return;
-		}
-
 		String clientToken = wrappedRequest.getHeader("Client-Authorization");
 		String userToken = wrappedRequest.getHeader("Authorization");
 

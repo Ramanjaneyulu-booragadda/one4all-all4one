@@ -19,4 +19,5 @@ public interface UserRepository extends JpaRepository<Member, Long> {
 	List<Member> findByOfaMemberIdIn(List<String> memberIds);
 	@Query("SELECT m FROM Member m WHERE m.ofaMemberId NOT IN (SELECT r.memberId FROM ReferrerDetails r)")
 	Page<Member> findUnassignedMembers(Pageable pageable);
+	Optional<Member> findByOfaMobileNo(String mobileNo);
 }

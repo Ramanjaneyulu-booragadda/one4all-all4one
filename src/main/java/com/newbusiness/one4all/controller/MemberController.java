@@ -36,11 +36,13 @@ import com.newbusiness.one4all.dto.MemberProfileResponse;
 import com.newbusiness.one4all.dto.UnassignedMemberToReffererSystemDto;
 import com.newbusiness.one4all.dto.UpdateProfileRequest;
 import com.newbusiness.one4all.model.Member;
+import com.newbusiness.one4all.model.PasswordResetToken;
 import com.newbusiness.one4all.model.Role;
 import com.newbusiness.one4all.security.RoleCheck;
 import com.newbusiness.one4all.service.EmailService;
 import com.newbusiness.one4all.service.MemberService;
 import com.newbusiness.one4all.service.PasswordResetService;
+import com.newbusiness.one4all.service.SmsService;
 import com.newbusiness.one4all.util.ApiResponse;
 import com.newbusiness.one4all.util.GlobalConstants;
 import com.newbusiness.one4all.util.ResponseUtils;
@@ -58,6 +60,7 @@ public class MemberController {
 	@Autowired private JwtEncoder jwtEncoder;
 	@Autowired private JwtDecoder jwtDecoder;
 	@Autowired private EmailService emailService;
+	@Autowired private SmsService smsService;
 
 	@Value("${microservice.url}")
 	private String microServiceUrl;
@@ -107,6 +110,11 @@ public class MemberController {
 			);
 			// Send registration email with member details
 			emailService.sendRegistrationEmail(registeredUser.getOfaEmail(), registeredUser.getOfaFullName(), data);
+			// Send registration success SMS if mobile is present
+			String mobile = registeredUser.getOfaMobileNo();
+			if (mobile != null && !mobile.isBlank()) {
+				emailService.sendRegistrationSuccessSms(mobile, registeredUser.getOfaFullName(), data);
+			}
 			return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(
 				Map.of("status", "Success", "message", "User Registered Successfully", "RegistrationDetails", data)
 			)));
@@ -213,29 +221,42 @@ public class MemberController {
 	@PostMapping("/reset-password-request")
 	public ResponseEntity<?> requestReset(@RequestBody Map<String, String> request) {
 		String email = request.get("email");
-		String token = resetService.createResetToken(email);
-		if (token != null) {
-			String resetLink = resetPasswordBaseUrl + token;
-			log.info("🔗 Password Reset Link: {}", resetLink);
-			// Send password reset email
-			emailService.sendPasswordResetEmail(email, resetLink);
+		String mobile = request.get("mobile");
+		String memberId = request.get("memberId");
+		PasswordResetService.PasswordResetResult result = resetService.handlePasswordResetRequest(email, mobile, memberId, resetPasswordBaseUrl);
+		if (result.isSuccess()) {
+			return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", result.getMessage()))));
+		} else {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+				.body(ResponseUtils.buildErrorResponseDirect("Reset Failed", 400, result.getMessage()));
 		}
-		return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", "Password reset link sent to your Registered email. please check and reset password."))));
 	}
 
 	// ✅ Password Reset: Confirm
 	@PostMapping("/reset-password/confirm")
-	public ResponseEntity<?> confirmReset(@RequestBody Map<String, String> request) {
-		String token = request.get("token");
-		boolean success = resetService.resetPassword(token, request.get("newPassword"));
-		if (success) {
-			// Fetch the email from the token using the service method
-			resetService.getEmailByToken(token).ifPresent(emailService::sendPasswordResetSuccessEmail);
-			return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", "Password reset successful."))));
-		}
-		return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-				.body(ResponseUtils.buildErrorResponse("Reset Failed", 400, "Invalid or expired token"));
-	}
+	public ResponseEntity<?> confirmReset(@RequestHeader("Client-Authorization") String clientToken,
+                                          @RequestBody Map<String, String> request) {
+        if (!SecurityUtils.isValidClientToken(clientToken, jwtDecoder)) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid client token");
+        }
+        String token = request.get("token");
+        PasswordResetService.PasswordResetResult result = resetService.resetPasswordWithResult(token, request.get("newPassword"));
+        if (result.isSuccess()) {
+            // Fetch the email and mobile from the token using the service method
+            resetService.getEmailByToken(token).ifPresent(email -> {
+                emailService.sendPasswordResetSuccessEmail(email);
+                userService.findByOfaEmail(email).ifPresent(member -> {
+                    String mobile = member.getOfaMobileNo();
+                    if (mobile != null && !mobile.isBlank()) {
+                        emailService.sendPasswordResetSuccessSms(mobile);
+                    }
+                });
+            });
+            return ResponseEntity.ok(ResponseUtils.buildApiResponse(List.of(Map.of("message", result.getMessage()))));
+        }
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ResponseUtils.buildErrorResponseDirect("Reset Failed", 400, result.getMessage()));
+    }
 
 	// 📦 Reusable JWT generation logic
 	private String generateToken(Member user) {

@@ -60,7 +60,20 @@ public class ResponseUtils {
         return new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), List.of(errorMessage));
     }
 
-    // ✅ Validation error response
+    // Overloaded: Accepts direct error message instead of descriptionKey
+    public static ApiResponse<Object> buildErrorResponseDirect(String status, int code, String description) {
+        log.error("Building error response (direct): status={}, code={}, description={}", status, code, description);
+        Map<String, Object> errorDetails = Map.of(
+            "code", code,
+            "description", description
+        );
+        Map<String, Object> errorMessage = Map.of(
+            "status", status,
+            "errorDetails", errorDetails
+        );
+        return new ApiResponse<>(generateCorrelationID(), getCurrentTimestamp(), List.of(errorMessage));
+    }
+
     public static ApiResponse<Object> buildValidationErrorResponse(List<Map<String, Object>> fieldErrors) {
         log.error("Building validation error response: {}", fieldErrors);
         Map<String, Object> errorMessage = Map.of(
