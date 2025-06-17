@@ -1,5 +1,6 @@
 package com.newbusiness.one4all.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,20 +15,25 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class CorsGlobalConfig {
 
-	 @Bean
-	    public FilterRegistrationBean<CorsFilter> corsFilter() {
-	        CorsConfiguration config = new CorsConfiguration();
-	        config.setAllowCredentials(true);
-	        config.addAllowedOrigin("http://localhost:3000"); // React/Next.js frontend
-	        config.addAllowedOrigin("http://192.168.29.108:3000"); // Allow LAN IP for mobile access
-	        config.addAllowedHeader("*");
-	        config.addAllowedMethod("*");
+    @Value("${cors.allowed.origins:https://localhost:3000}")
+    private String allowedOrigins;
 
-	        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-	        source.registerCorsConfiguration("/**", config); // or "/**" for all
+    @Bean
+    public FilterRegistrationBean<CorsFilter> corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowCredentials(true);
+        // Support comma-separated origins from env/properties
+        for (String origin : allowedOrigins.split(",")) {
+            config.addAllowedOrigin(origin.trim());
+        }
+        config.addAllowedHeader("*");
+        config.addAllowedMethod("*");
 
-	        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<CorsFilter>(new CorsFilter(source));
-	        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-	        return bean;
-	    }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+
+        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<CorsFilter>(new CorsFilter(source));
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
+        return bean;
+    }
 }

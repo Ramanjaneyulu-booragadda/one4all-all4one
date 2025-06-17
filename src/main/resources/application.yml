@@ -47,3 +47,31 @@ spring:
         enabled: true
 server:
   port: 8080
+  ssl:
+    enabled: true
+    key-store: ${SSL_KEYSTORE_PATH}
+    key-store-password: ${SSL_KEYSTORE_PASSWORD}
+    key-store-type: PKCS12
+    key-alias: ${SSL_KEY_ALIAS}
+microservice:
+  url: ${MICROSERVICE_URL}
+  clientid: ${MICROSERVICE_CLIENTID}
+  clientsecret: ${MICROSERVICE_CLIENTSECRET}
+  scope: ${MICROSERVICE_SCOPE}
+rsa:
+  private:
+    key: ${RSA_PRIVATE_KEY_PATH}
+  public:
+    key: ${RSA_PUBLIC_KEY_PATH}
+aws:
+  ses:
+    region: ${AWS_SES_REGION}
+    access-key: ${AWS_SES_ACCESS_KEY}
+    secret-key: ${AWS_SES_SECRET_KEY}
+    verified-sender: ${AWS_SES_VERIFIED_SENDER}
+frontend:
+  reset-password:
+    base-url: ${FRONTEND_RESET_PASSWORD_BASE_URL}
+  base-url: ${FRONTEND_BASE_URL}
+upload:
+  dir: ${UPLOAD_DIR}
