@@ -65,7 +65,7 @@ After=network.target
 [Service]
 User=ubuntu
 WorkingDirectory=${params.APP_DIR}
-ExecStart=/usr/bin/java -jar ${params.APP_DIR}/app.jar --spring.profiles.active=${params.SPRING_PROFILE}
+ExecStart=/usr/bin/env bash -c 'set -a && source ${params.APP_DIR}/.env && exec /usr/bin/java -jar ${params.APP_DIR}/app.jar --spring.profiles.active=${params.SPRING_PROFILE}'
 SuccessExitStatus=143
 TimeoutStopSec=10
 Restart=on-failure
