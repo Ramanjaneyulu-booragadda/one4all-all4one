@@ -1,7 +1,6 @@
 pipeline {
   agent any
 
-  // ✅ Parameters to be filled during Jenkins build execution
   parameters {
     string(name: 'SPRING_PROFILE', defaultValue: 'dev', description: 'Spring Boot profile')
     string(name: 'DB_HOST', defaultValue: 'one4all.cximqo2u6zu2.ap-south-1.rds.amazonaws.com', description: 'RDS DB hostname')
@@ -21,7 +20,6 @@ pipeline {
     string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch to deploy')
   }
 
-  // 🛡️ SSH credential ID for EC2 access (stored in Jenkins credentials)
   environment {
     SSH_CRED_ID = "ec2-b-private-key"
   }
@@ -44,7 +42,7 @@ pipeline {
 
     stage('📦 Prepare Deployment Files') {
       steps {
-        echo 'Creating .env file...'
+        echo 'Creating .env file and backend.service...'
         writeFile file: 'temp.env', text: """
 SPRING_PROFILE=${params.SPRING_PROFILE}
 DB_HOST=${params.DB_HOST}
@@ -56,23 +54,53 @@ AWS_SES_ACCESS_KEY=${params.AWS_SES_ACCESS_KEY}
 AWS_SES_SECRET_KEY=${params.AWS_SES_SECRET_KEY}
 AWS_SES_VERIFIED_SENDER=${params.AWS_SES_VERIFIED_SENDER}
 """
+
+        writeFile file: 'backend.service', text: """
+[Unit]
+Description=Spring Boot Backend Service
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=${params.APP_DIR}
+ExecStart=/usr/bin/java -jar ${params.APP_DIR}/app.jar --spring.profiles.active=${params.SPRING_PROFILE}
+SuccessExitStatus=143
+TimeoutStopSec=10
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+"""
       }
     }
 
-    stage('📤 Upload JAR & .env to EC2') {
+    stage('📤 Upload Files to EC2') {
       steps {
         sshagent([env.SSH_CRED_ID]) {
           sh """
             echo '📁 Creating app directory on EC2...'
             ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} 'mkdir -p ${params.APP_DIR}'
 
-            echo '⬆️ Uploading app.jar...'
+            echo '⬆️ Uploading JAR...'
             scp -o StrictHostKeyChecking=no target/${params.JAR_NAME} ${params.EC2_HOST}:${params.APP_DIR}/app.jar
 
-            echo '⬆️ Uploading .env file...'
+            echo '⬆️ Uploading .env...'
             scp -o StrictHostKeyChecking=no temp.env ${params.EC2_HOST}:${params.APP_DIR}/.env
 
-            rm -f temp.env
+            echo '⬆️ Uploading backend.service file...'
+            scp -o StrictHostKeyChecking=no backend.service ${params.EC2_HOST}:/tmp/backend.service
+
+            echo '📦 Installing backend.service...'
+            ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} '
+              sudo mv /tmp/backend.service /etc/systemd/system/backend.service && \
+              sudo chmod 644 /etc/systemd/system/backend.service && \
+              sudo systemctl daemon-reexec && \
+              sudo systemctl daemon-reload
+            '
+
+            echo '🧹 Cleaning temp files...'
+            rm -f temp.env backend.service
           """
         }
       }
@@ -84,9 +112,9 @@ AWS_SES_VERIFIED_SENDER=${params.AWS_SES_VERIFIED_SENDER}
           echo '🔄 Restarting backend systemd service on EC2...'
           sh """
             ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} '
-              sudo systemctl daemon-reexec && \
-              sudo systemctl daemon-reload && \
-              sudo systemctl restart backend'
+              sudo systemctl restart backend && \
+              echo "Restarted backend at $(date)" >> ${params.APP_DIR}/deploy.log
+            '
           """
         }
       }
