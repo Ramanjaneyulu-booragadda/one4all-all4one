@@ -14,10 +14,6 @@ pipeline {
     password(name: 'AWS_SES_SECRET_KEY', defaultValue: '', description: 'AWS SES secret key')
     string(name: 'AWS_SES_VERIFIED_SENDER', defaultValue: '', description: 'AWS SES verified sender email')
 
-    string(name: 'SSL_KEYSTORE_PATH', defaultValue: '/home/ubuntu/backend/keystore.p12', description: 'SSL Keystore path')
-    password(name: 'SSL_KEYSTORE_PASSWORD', defaultValue: '', description: 'SSL Keystore password')
-    string(name: 'SSL_KEY_ALIAS', defaultValue: 'tomcat', description: 'SSL key alias')
-
     string(name: 'EC2_HOST', defaultValue: 'ubuntu@13.202.212.226', description: 'EC2-B Host (user@IP)')
     string(name: 'APP_DIR', defaultValue: '/home/ubuntu/backend', description: 'Remote path to deploy backend')
     string(name: 'JAR_NAME', defaultValue: 'one4all-all4one-0.0.1-SNAPSHOT.jar', description: 'Built JAR filename')
@@ -25,7 +21,7 @@ pipeline {
     string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch to deploy')
   }
 
-  // 🛡️ Credential ID for SSH private key stored in Jenkins
+  // 🛡️ SSH credential ID for EC2 access (stored in Jenkins credentials)
   environment {
     SSH_CRED_ID = "ec2-b-private-key"
   }
@@ -48,7 +44,7 @@ pipeline {
 
     stage('📦 Prepare Deployment Files') {
       steps {
-        echo 'Creating .env and preparing keystore file...'
+        echo 'Creating .env file...'
         writeFile file: 'temp.env', text: """
 SPRING_PROFILE=${params.SPRING_PROFILE}
 DB_HOST=${params.DB_HOST}
@@ -59,27 +55,22 @@ DB_PASSWORD=${params.DB_PASSWORD}
 AWS_SES_ACCESS_KEY=${params.AWS_SES_ACCESS_KEY}
 AWS_SES_SECRET_KEY=${params.AWS_SES_SECRET_KEY}
 AWS_SES_VERIFIED_SENDER=${params.AWS_SES_VERIFIED_SENDER}
-SSL_KEYSTORE_PATH=${params.SSL_KEYSTORE_PATH}
-SSL_KEYSTORE_PASSWORD=${params.SSL_KEYSTORE_PASSWORD}
-SSL_KEY_ALIAS=${params.SSL_KEY_ALIAS}
 """
       }
     }
 
-    stage('📤 Upload JAR, .env & Keystore to EC2') {
+    stage('📤 Upload JAR & .env to EC2') {
       steps {
         sshagent([env.SSH_CRED_ID]) {
           sh """
+            echo '📁 Creating app directory on EC2...'
             ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} 'mkdir -p ${params.APP_DIR}'
 
-            echo 'Uploading app.jar...'
+            echo '⬆️ Uploading app.jar...'
             scp -o StrictHostKeyChecking=no target/${params.JAR_NAME} ${params.EC2_HOST}:${params.APP_DIR}/app.jar
 
-            echo 'Uploading .env file...'
+            echo '⬆️ Uploading .env file...'
             scp -o StrictHostKeyChecking=no temp.env ${params.EC2_HOST}:${params.APP_DIR}/.env
-
-            echo 'Uploading SSL Keystore...'
-            scp -o StrictHostKeyChecking=no ${params.SSL_KEYSTORE_PATH} ${params.EC2_HOST}:${params.SSL_KEYSTORE_PATH}
 
             rm -f temp.env
           """
@@ -90,7 +81,7 @@ SSL_KEY_ALIAS=${params.SSL_KEY_ALIAS}
     stage('🚀 Restart Backend Service') {
       steps {
         sshagent([env.SSH_CRED_ID]) {
-          echo 'Restarting backend systemd service on EC2...'
+          echo '🔄 Restarting backend systemd service on EC2...'
           sh """
             ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} '
               sudo systemctl daemon-reexec && \
@@ -104,9 +95,10 @@ SSL_KEY_ALIAS=${params.SSL_KEY_ALIAS}
     stage('🔍 Verify Deployment') {
       steps {
         sshagent([env.SSH_CRED_ID]) {
-          echo 'Checking backend service status...'
+          echo '🔎 Checking backend service status...'
           sh """
-            ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} 'sudo systemctl status backend || echo "Backend service is not running!"'
+            ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} '
+              sudo systemctl status backend || echo "⚠️ Backend service is not running!"'
           """
         }
       }
