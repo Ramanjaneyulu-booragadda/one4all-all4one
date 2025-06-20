@@ -18,6 +18,7 @@ pipeline {
     string(name: 'JAR_NAME', defaultValue: 'one4all-all4one-0.0.1-SNAPSHOT.jar', description: 'Built JAR filename')
     string(name: 'GIT_REPO_URL', defaultValue: 'https://github.com/Ramanjaneyulu-booragadda/one4all-all4one.git', description: 'Git repo URL')
     string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch to deploy')
+    string(name: 'MICROSERVICE_URL', defaultValue: '', description: 'URL of the second microservice')
   }
 
   environment {
@@ -53,6 +54,7 @@ DB_PASSWORD=${params.DB_PASSWORD}
 AWS_SES_ACCESS_KEY=${params.AWS_SES_ACCESS_KEY}
 AWS_SES_SECRET_KEY=${params.AWS_SES_SECRET_KEY}
 AWS_SES_VERIFIED_SENDER=${params.AWS_SES_VERIFIED_SENDER}
+MICROSERVICE_URL=${params.MICROSERVICE_URL}
 """
 
         writeFile file: 'backend.service', text: """
