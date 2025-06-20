@@ -107,18 +107,18 @@ WantedBy=multi-user.target
     }
 
     stage('🚀 Restart Backend Service') {
-      steps {
-        sshagent([env.SSH_CRED_ID]) {
-          echo '🔄 Restarting backend systemd service on EC2...'
-          sh """
-            ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} '
-              sudo systemctl restart backend && \
-              echo "Restarted backend at $(date)" >> ${params.APP_DIR}/deploy.log
-            '
-          """
-        }
-      }
+  steps {
+    sshagent([env.SSH_CRED_ID]) {
+      echo 'Restarting backend systemd service on EC2...'
+      sh """
+        ssh -o StrictHostKeyChecking=no ${params.EC2_HOST} \\
+          'sudo systemctl daemon-reexec && \\
+           sudo systemctl daemon-reload && \\
+           sudo systemctl restart backend'
+      """
     }
+  }
+}
 
     stage('🔍 Verify Deployment') {
       steps {
