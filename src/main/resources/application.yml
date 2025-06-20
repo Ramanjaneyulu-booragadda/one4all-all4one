@@ -47,12 +47,6 @@ spring:
         enabled: true
 server:
   port: 8080
-  ssl:
-    enabled: true
-    key-store: ${SSL_KEYSTORE_PATH}
-    key-store-password: ${SSL_KEYSTORE_PASSWORD}
-    key-store-type: PKCS12
-    key-alias: ${SSL_KEY_ALIAS}
 microservice:
   url: ${MICROSERVICE_URL}
   clientid: ${MICROSERVICE_CLIENTID}
