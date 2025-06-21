@@ -18,7 +18,18 @@ pipeline {
     string(name: 'JAR_NAME', defaultValue: 'one4all-all4one-0.0.1-SNAPSHOT.jar', description: 'Built JAR filename')
     string(name: 'GIT_REPO_URL', defaultValue: 'https://github.com/Ramanjaneyulu-booragadda/one4all-all4one.git', description: 'Git repo URL')
     string(name: 'GIT_BRANCH', defaultValue: 'master', description: 'Branch to deploy')
-    string(name: 'MICROSERVICE_URL', defaultValue: '', description: 'URL of the second microservice')
+    string(name: 'MICROSERVICE_URL', defaultValue: '', description: 'Microservice base URL')
+    string(name: 'MICROSERVICE_CLIENTID', defaultValue: '', description: 'Microservice client ID')
+    string(name: 'MICROSERVICE_CLIENTSECRET', defaultValue: '', description: 'Microservice client secret')
+    string(name: 'MICROSERVICE_SCOPE', defaultValue: '', description: 'Microservice scope')
+    string(name: 'RSA_PRIVATE_KEY_PATH', defaultValue: '', description: 'Path to RSA private key')
+    string(name: 'RSA_PUBLIC_KEY_PATH', defaultValue: '', description: 'Path to RSA public key')
+    string(name: 'AWS_SES_REGION', defaultValue: '', description: 'AWS SES region')
+    string(name: 'FRONTEND_RESET_PASSWORD_BASE_URL', defaultValue: '', description: 'Frontend reset password base URL')
+    string(name: 'FRONTEND_BASE_URL', defaultValue: '', description: 'Frontend base URL')
+    string(name: 'UPLOAD_DIR', defaultValue: 'uploads', description: 'Upload directory')
+    string(name: 'CORS_ALLOWED_ORIGINS', defaultValue: 'https://one4all-all4one.com', description: 'CORS allowed origins')
+    string(name: 'CORS_ALLOWED_METHODS', defaultValue: 'GET,POST,PUT,DELETE,OPTIONS', description: 'CORS allowed methods')
   }
 
   environment {
@@ -55,6 +66,17 @@ AWS_SES_ACCESS_KEY=${params.AWS_SES_ACCESS_KEY}
 AWS_SES_SECRET_KEY=${params.AWS_SES_SECRET_KEY}
 AWS_SES_VERIFIED_SENDER=${params.AWS_SES_VERIFIED_SENDER}
 MICROSERVICE_URL=${params.MICROSERVICE_URL}
+MICROSERVICE_CLIENTID=${params.MICROSERVICE_CLIENTID}
+MICROSERVICE_CLIENTSECRET=${params.MICROSERVICE_CLIENTSECRET}
+MICROSERVICE_SCOPE=${params.MICROSERVICE_SCOPE}
+RSA_PRIVATE_KEY_PATH=${params.RSA_PRIVATE_KEY_PATH}
+RSA_PUBLIC_KEY_PATH=${params.RSA_PUBLIC_KEY_PATH}
+AWS_SES_REGION=${params.AWS_SES_REGION}
+FRONTEND_RESET_PASSWORD_BASE_URL=${params.FRONTEND_RESET_PASSWORD_BASE_URL}
+FRONTEND_BASE_URL=${params.FRONTEND_BASE_URL}
+UPLOAD_DIR=${params.UPLOAD_DIR}
+CORS_ALLOWED_ORIGINS=${params.CORS_ALLOWED_ORIGINS}
+CORS_ALLOWED_METHODS=${params.CORS_ALLOWED_METHODS}
 """
 
         writeFile file: 'backend.service', text: """
