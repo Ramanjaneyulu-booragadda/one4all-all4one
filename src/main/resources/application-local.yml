@@ -1,18 +1,19 @@
 spring:
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:one4all}?useSSL=true&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}?useSSL=true&requireSSL=true&verifyServerCertificate=false
     username: ${DB_USER}
     password: ${DB_PASSWORD}
   jpa:
     hibernate:
-      ddl-auto: validate
-    show-sql: 'true'
+      dialect: org.hibernate.dialect.MySQL8Dialect
+      enable_lazy_load_no_trans: true
+    show-sql: true
+    format_sql: true
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        enable_lazy_load_no_trans: 'true'
-        format_sql: 'true'
+        format_sql: true
+    ddl-auto: validate
   main:
     allow-bean-definition-overriding: 'true'
   
