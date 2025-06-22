@@ -142,7 +142,7 @@ public class PasswordResetService {
             if (token == null) {
                 return "Failed to create reset token.";
             }
-            String resetLink = resetLinkBaseUrl + token;
+            String resetLink = resetLinkBaseUrl +"?token="+ token;
             emailService.sendPasswordResetEmail(email, resetLink);
             return "Password reset link sent to your registered email.";
         } else {
@@ -154,7 +154,7 @@ public class PasswordResetService {
             if (token == null) {
                 return "Failed to create reset token.";
             }
-            String resetLink = resetLinkBaseUrl + token;
+            String resetLink = resetLinkBaseUrl +"?token="+ token;
             emailService.sendPasswordResetSms(mobile, resetLink);
             return "Password reset link sent to your registered mobile number.";
         }
@@ -290,7 +290,7 @@ public class PasswordResetService {
         if (token == null) {
             return new PasswordResetResult(false, "Failed to create reset token.");
         }
-        String resetLink = resetLinkBaseUrl + token;
+        String resetLink = resetLinkBaseUrl +"?token="+ token;
         if (email != null && !email.isBlank()) {
             emailService.sendPasswordResetEmail(member.getOfaEmail(), resetLink);
             return new PasswordResetResult(true, "Password reset link sent to your registered email.");
