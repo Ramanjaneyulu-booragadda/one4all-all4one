@@ -1,6 +1,7 @@
 package com.newbusiness.one4all.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
@@ -22,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
 @Configuration
@@ -36,6 +38,10 @@ public class SecurityConfigurer {
 
     @Autowired
     private Environment env;
+    @Value("${cors.allowed.origins:https://localhost:3000}")
+    private String allowedOrigins;
+    @Value("${cors.allowed.methods}")
+    private String allowedMethods;
     public SecurityConfigurer(@Lazy UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
@@ -64,7 +70,15 @@ public class SecurityConfigurer {
                     "/oauth2/token" 
                 ).permitAll()
                 .anyRequest().authenticated()
-            )
+            ).exceptionHandling(exception -> exception
+                    .authenticationEntryPoint((request, response, authException) -> {
+                        // 👇 Add CORS headers to error response
+                        response.setHeader("Access-Control-Allow-Origin", "*");
+                        response.setHeader("Access-Control-Allow-Headers", request.getHeader("Origin"));
+                        response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    })
+                )
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .oauth2ResourceServer(oauth2 -> oauth2.jwt())
             .addFilterBefore(tokenValidationFilter, UsernamePasswordAuthenticationFilter.class);
@@ -77,9 +91,13 @@ public class SecurityConfigurer {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.addAllowedOrigin("http://localhost:3000");
-        configuration.addAllowedOrigin("http://192.168.29.108:3000"); // Allow LAN IP for mobile access
-        configuration.addAllowedMethod("*"); // Allow all HTTP methods
+     // Support comma-separated origins from env/properties
+        for (String origin : allowedOrigins.split(",")) {
+        	configuration.addAllowedOrigin(origin.trim());
+        }
+        for (String methods : allowedMethods.split(",")) {
+        	configuration.addAllowedMethod(methods.trim());
+        }
         configuration.addAllowedHeader("*"); // Allow all headers
         configuration.setAllowCredentials(true); // Allow cookies or authorization headers
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
