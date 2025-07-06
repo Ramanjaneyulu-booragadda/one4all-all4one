@@ -23,6 +23,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
@@ -34,7 +35,7 @@ public class SecurityConfigurer {
     @Lazy
     private final UserDetailsService userDetailsService;
     @Autowired
-    private TokenValidationFilter tokenValidationFilter;  // 🔥 Autowire instead of defining a Bean manually
+    private TokenValidationFilter tokenValidationFilter; // 🔥 Autowire instead of defining a Bean manually
 
     @Autowired
     private Environment env;
@@ -42,6 +43,15 @@ public class SecurityConfigurer {
     private String allowedOrigins;
     @Value("${cors.allowed.methods}")
     private String allowedMethods;
+
+    @PostConstruct
+public void init() {
+    
+    log.info(">>> CORS ORIGINS from YAML: {}", allowedOrigins);
+    log.info(">>> CORS METHODS from YAML: {}", allowedMethods);
+
+}
+
     public SecurityConfigurer(@Lazy UserDetailsService userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
@@ -50,38 +60,38 @@ public class SecurityConfigurer {
      * Security filter chain configuration.
      */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder,ObjectMapper objectMapper) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtDecoder jwtDecoder, ObjectMapper objectMapper)
+            throws Exception {
         String clientID = env.getProperty("microservice.clientid");
         System.out.println("🔴 Loaded microservice.clientid: " + clientID);
 
         http
-            .csrf(csrf -> csrf.ignoringRequestMatchers(
-                "/api/register", "/api/login", "/api/bulk-register",
-                "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
-                "/api/reset-password/confirm", // <-- Added confirm endpoint
-                "/oauth2/token" // <-- Added to disable CSRF for token endpoint
-            ))
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(
-                    "/api/register", "/api/login", "/api/bulk-register",
-                    "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
-                    "/api/reset-password/confirm", // <-- Added confirm endpoint
-                    "/oauth2/token" 
-                ).permitAll()
-                .anyRequest().authenticated()
-            ).exceptionHandling(exception -> exception
-                    .authenticationEntryPoint((request, response, authException) -> {
-                        // 👇 Add CORS headers to error response
-                        response.setHeader("Access-Control-Allow-Origin", "*");
-                        response.setHeader("Access-Control-Allow-Headers", request.getHeader("Origin"));
-                        response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                    })
-                )
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .oauth2ResourceServer(oauth2 -> oauth2.jwt())
-            .addFilterBefore(tokenValidationFilter, UsernamePasswordAuthenticationFilter.class);
+                .csrf(csrf -> csrf.ignoringRequestMatchers(
+                        "/api/register", "/api/login", "/api/bulk-register",
+                        "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
+                        "/api/reset-password/confirm", // <-- Added confirm endpoint
+                        "/oauth2/token" // <-- Added to disable CSRF for token endpoint
+                ))
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/api/register", "/api/login", "/api/bulk-register",
+                                "/api/admin/register", "/api/admin/login", "/api/reset-password-request",
+                                "/api/reset-password/confirm", // <-- Added confirm endpoint
+                                "/oauth2/token")
+                        .permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            // 👇 Add CORS headers to error response
+                            response.setHeader("Access-Control-Allow-Origin", "*");
+                            response.setHeader("Access-Control-Allow-Headers", request.getHeader("Origin"));
+                            response.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                        }))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt())
+                .addFilterBefore(tokenValidationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -91,12 +101,12 @@ public class SecurityConfigurer {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-     // Support comma-separated origins from env/properties
+        // Support comma-separated origins from env/properties
         for (String origin : allowedOrigins.split(",")) {
-        	configuration.addAllowedOrigin(origin.trim());
+            configuration.addAllowedOrigin(origin.trim());
         }
         for (String methods : allowedMethods.split(",")) {
-        	configuration.addAllowedMethod(methods.trim());
+            configuration.addAllowedMethod(methods.trim());
         }
         configuration.addAllowedHeader("*"); // Allow all headers
         configuration.setAllowCredentials(true); // Allow cookies or authorization headers
@@ -132,6 +142,5 @@ public class SecurityConfigurer {
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
-    
-    
+
 }
